@@ -222,8 +222,13 @@ VALUES ('auth-uuid-here', 'Test', 'User', 30, 'hombre', 'Buenos Aires', 'admin',
 
 ## Key Design Decisions
 
-1. **No server-side routing** - Pure client-side React Router
-2. **RLS over API** - Security enforced at database level, not application
-3. **Zustand over Context** - Simpler auth state management
-4. **shadcn/ui** - Headless components, full customization
-5. **Tailwind v3** - v4 causes build errors with current setup
+1. **No server-side routing** - Pure client-side React Router with role-based redirects
+2. **RLS over API** - Security enforced at database level via PostgreSQL policies
+3. **Zustand over Context** - Simpler auth state management, persisted to localStorage
+4. **shadcn/ui** - Headless Radix UI components with full Tailwind customization
+5. **Tailwind v3** - v4 causes build errors with current Vite setup
+6. **Supabase Realtime** - Live counter updates instead of polling
+7. **Multi-tenant isolation** - Every query filtered by `uuid_club` via RLS
+8. **VIP vs Regular guests** - Separate workflows: VIP requires profile image, allows re-entry
+9. **Mobile-first forms** - Fixed bottom buttons, safe-area support for notches
+10. **QR Code scanner** - Html5Qrcode library with auto-start, continuous scanning
