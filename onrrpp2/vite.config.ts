@@ -5,7 +5,11 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), basicSsl()],
+  plugins: [
+    react(),
+    // basicSsl solo para desarrollo local
+    ...(process.env.NODE_ENV !== 'production' ? [basicSsl()] : [])
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -13,5 +17,18 @@ export default defineConfig({
   },
   server: {
     host: true, // Expone el servidor en la red local
+  },
+  build: {
+    // Optimizaciones para producción
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
+          'supabase-vendor': ['@supabase/supabase-js'],
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000,
   }
 })
