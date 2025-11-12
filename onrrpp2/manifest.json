@@ -1,6 +1,6 @@
 {
-    "name": "Mi App",
-    "short_name": "App",
+    "name": "OnEvents",
+    "short_name": "OnEvents",
     "start_url": "/",
     "display": "standalone",
     "icons": [
