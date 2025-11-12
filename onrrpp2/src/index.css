@@ -27,25 +27,170 @@
   }
 
   .dark {
-    --background: 0 0% 3.9%;
+    --background: 0 0% 0%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
+    --card: 0 0% 5%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
+    --popover: 0 0% 5%;
     --popover-foreground: 0 0% 98%;
     --primary: 0 0% 98%;
     --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
+    --secondary: 0 0% 10%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
+    --muted: 0 0% 10%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
+    --accent: 0 0% 10%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
     --ring: 0 0% 83.1%;
+  }
+
+  /* Neon Purple Theme */
+  .theme-neon-purple {
+    --primary: 280 100% 70%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 280 100% 70%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 280 100% 70%;
+  }
+
+  .dark.theme-neon-purple {
+    --background: 280 50% 5%;
+    --foreground: 280 20% 98%;
+    --card: 280 40% 8%;
+    --card-foreground: 280 20% 98%;
+    --popover: 280 40% 8%;
+    --popover-foreground: 280 20% 98%;
+    --primary: 280 100% 70%;
+    --primary-foreground: 280 50% 10%;
+    --secondary: 280 30% 15%;
+    --secondary-foreground: 280 20% 98%;
+    --muted: 280 30% 15%;
+    --muted-foreground: 280 20% 70%;
+    --accent: 280 100% 70%;
+    --accent-foreground: 280 50% 10%;
+    --border: 280 40% 20%;
+    --input: 280 40% 20%;
+    --ring: 280 100% 70%;
+  }
+
+  /* Neon Cyan Theme */
+  .theme-neon-cyan {
+    --primary: 180 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 180 100% 50%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 180 100% 50%;
+  }
+
+  .dark.theme-neon-cyan {
+    --background: 180 50% 5%;
+    --foreground: 180 20% 98%;
+    --card: 180 40% 8%;
+    --card-foreground: 180 20% 98%;
+    --popover: 180 40% 8%;
+    --popover-foreground: 180 20% 98%;
+    --primary: 180 100% 50%;
+    --primary-foreground: 180 50% 10%;
+    --secondary: 180 30% 15%;
+    --secondary-foreground: 180 20% 98%;
+    --muted: 180 30% 15%;
+    --muted-foreground: 180 20% 70%;
+    --accent: 180 100% 50%;
+    --accent-foreground: 180 50% 10%;
+    --border: 180 40% 20%;
+    --input: 180 40% 20%;
+    --ring: 180 100% 50%;
+  }
+
+  /* Neon Pink Theme */
+  .theme-neon-pink {
+    --primary: 330 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 330 100% 60%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 330 100% 60%;
+  }
+
+  .dark.theme-neon-pink {
+    --background: 330 50% 5%;
+    --foreground: 330 20% 98%;
+    --card: 330 40% 8%;
+    --card-foreground: 330 20% 98%;
+    --popover: 330 40% 8%;
+    --popover-foreground: 330 20% 98%;
+    --primary: 330 100% 60%;
+    --primary-foreground: 330 50% 10%;
+    --secondary: 330 30% 15%;
+    --secondary-foreground: 330 20% 98%;
+    --muted: 330 30% 15%;
+    --muted-foreground: 330 20% 70%;
+    --accent: 330 100% 60%;
+    --accent-foreground: 330 50% 10%;
+    --border: 330 40% 20%;
+    --input: 330 40% 20%;
+    --ring: 330 100% 60%;
+  }
+
+  /* Neon Green Theme */
+  .theme-neon-green {
+    --primary: 150 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 150 100% 50%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 150 100% 50%;
+  }
+
+  .dark.theme-neon-green {
+    --background: 150 50% 5%;
+    --foreground: 150 20% 98%;
+    --card: 150 40% 8%;
+    --card-foreground: 150 20% 98%;
+    --popover: 150 40% 8%;
+    --popover-foreground: 150 20% 98%;
+    --primary: 150 100% 50%;
+    --primary-foreground: 150 50% 10%;
+    --secondary: 150 30% 15%;
+    --secondary-foreground: 150 20% 98%;
+    --muted: 150 30% 15%;
+    --muted-foreground: 150 20% 70%;
+    --accent: 150 100% 50%;
+    --accent-foreground: 150 50% 10%;
+    --border: 150 40% 20%;
+    --input: 150 40% 20%;
+    --ring: 150 100% 50%;
+  }
+
+  /* Neon Orange Theme */
+  .theme-neon-orange {
+    --primary: 30 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 30 100% 60%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 30 100% 60%;
+  }
+
+  .dark.theme-neon-orange {
+    --background: 30 50% 5%;
+    --foreground: 30 20% 98%;
+    --card: 30 40% 8%;
+    --card-foreground: 30 20% 98%;
+    --popover: 30 40% 8%;
+    --popover-foreground: 30 20% 98%;
+    --primary: 30 100% 60%;
+    --primary-foreground: 30 50% 10%;
+    --secondary: 30 30% 15%;
+    --secondary-foreground: 30 20% 98%;
+    --muted: 30 30% 15%;
+    --muted-foreground: 30 20% 70%;
+    --accent: 30 100% 60%;
+    --accent-foreground: 30 50% 10%;
+    --border: 30 40% 20%;
+    --input: 30 40% 20%;
+    --ring: 30 100% 60%;
   }
 }
 

@@ -139,7 +139,7 @@ export function EventosRRPPPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Eventos</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Hola! {user?.personal.nombre} 👋</h1>
         <p className="text-muted-foreground">
           Selecciona un evento para crear invitados
         </p>

@@ -1,9 +1,16 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { LoginPage } from './components/pages/LoginPage'
 import { DashboardRouter } from './components/pages/DashboardRouter'
 import { ProtectedRoute } from './components/organisms/ProtectedRoute'
+import { themeService } from './services/theme.service'
 
 function App() {
+  useEffect(() => {
+    // Inicializar tema al cargar la aplicación
+    themeService.initTheme()
+  }, [])
+
   return (
     <BrowserRouter>
       <Routes>

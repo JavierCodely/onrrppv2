@@ -1483,7 +1483,7 @@ export function InvitadosPage() {
       <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
         <DialogPortal>
           <DialogPrimitive.Overlay className={cn(
-            "fixed inset-0 z-50 bg-white data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+            "fixed inset-0 z-50 bg-white dark:bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
           )} />
           <DialogPrimitive.Content
             className={cn(
@@ -1508,15 +1508,31 @@ export function InvitadosPage() {
 
                 {/* Información del evento */}
                 {selectedInvitado.evento && (
-                  <div className="flex items-center justify-center gap-2 p-3 border rounded-lg bg-slate-50 dark:bg-slate-900">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{selectedInvitado.evento.nombre}</span>
+                  <div className="relative overflow-hidden rounded-lg border">
+                    {/* Banner de fondo */}
+                    {selectedInvitado.evento.banner_url ? (
+                      <div
+                        className="absolute inset-0 bg-cover bg-center"
+                        style={{ backgroundImage: `url(${selectedInvitado.evento.banner_url})` }}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-slate-50 dark:bg-slate-900" />
+                    )}
+
+                    {/* Overlay oscuro */}
+                    <div className="absolute inset-0 bg-black/60" />
+
+                    {/* Contenido */}
+                    <div className="relative flex items-center justify-center gap-2 p-3">
+                      <Calendar className="h-4 w-4 text-white" />
+                      <span className="font-medium text-white">{selectedInvitado.evento.nombre}</span>
+                    </div>
                   </div>
                 )}
 
                 {/* Información del lote */}
                 {selectedInvitado.lote && (
-                  <div className="p-3 border rounded-lg bg-slate-50 dark:bg-slate-900">
+                  <div className="p-3 border rounded-lg bg-slate-50 dark:bg-slate-900 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Ticket className="h-4 w-4 text-muted-foreground" />
@@ -1537,6 +1553,11 @@ export function InvitadosPage() {
                         )}
                       </div>
                     </div>
+                    {user && (
+                      <div className="text-xs text-muted-foreground text-center pt-1 border-t">
+                        QR Generado por: {user.personal.nombre} {user.personal.apellido}
+                      </div>
+                    )}
                   </div>
                 )}
 

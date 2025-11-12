@@ -11,6 +11,7 @@ import {
   Building2,
   ScanLine,
   Menu,
+  Palette,
 } from 'lucide-react'
 
 interface SeguridadLayoutProps {
@@ -22,6 +23,11 @@ const menuItems = [
     name: 'Escanear QR',
     icon: ScanLine,
     path: '/dashboard/seguridad',
+  },
+  {
+    name: 'Tema',
+    icon: Palette,
+    path: '/dashboard/seguridad/tema',
   },
 ]
 
@@ -111,17 +117,17 @@ export function SeguridadLayout({ children }: SeguridadLayoutProps) {
   )
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-slate-50 dark:bg-background">
       <div className="flex h-screen">
         {/* Sidebar desktop */}
-        <aside className="hidden md:flex w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col">
+        <aside className="hidden md:flex w-64 bg-white dark:bg-card border-r border-slate-200 dark:border-border flex-col">
           <SidebarContent />
         </aside>
 
         {/* Main content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Mobile header */}
-          <header className="md:hidden sticky top-0 z-10 flex items-center gap-4 border-b bg-white dark:bg-slate-900 px-4 py-3">
+          <header className="md:hidden sticky top-0 z-10 flex items-center gap-4 border-b bg-white dark:bg-card px-4 py-3">
             <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="sm">

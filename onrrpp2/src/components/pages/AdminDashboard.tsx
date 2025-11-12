@@ -4,6 +4,7 @@ import { DashboardPage } from '@/components/pages/admin/DashboardPage'
 import { EventosPage } from '@/components/pages/admin/EventosPage'
 import { EmpleadosPage } from '@/components/pages/admin/EmpleadosPage'
 import { ConfiguracionesPage } from '@/components/pages/admin/ConfiguracionesPage'
+import { ConfiguracionPage } from '@/components/pages/ConfiguracionPage'
 
 export function AdminDashboard() {
   return (
@@ -13,6 +14,7 @@ export function AdminDashboard() {
         <Route path="eventos" element={<EventosPage />} />
         <Route path="empleados" element={<EmpleadosPage />} />
         <Route path="configuraciones" element={<ConfiguracionesPage />} />
+        <Route path="tema" element={<ConfiguracionPage />} />
         <Route path="*" element={<Navigate to="/dashboard/admin" replace />} />
       </Routes>
     </AdminLayout>

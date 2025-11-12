@@ -163,15 +163,15 @@ export function VentasPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-yellow-500 bg-gradient-to-r from-yellow-50 to-orange-50">
+            <Card className="border-yellow-500 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/30 dark:to-orange-950/30">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   Tu Comisión Total
                 </CardTitle>
-                <TrendingUp className="h-4 w-4 text-yellow-600" />
+                <TrendingUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">
+                <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                   ${stats.comision_total !== undefined ? stats.comision_total.toFixed(2) : '0.00'}
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -221,7 +221,7 @@ export function VentasPage() {
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <div className="text-xl md:text-2xl font-bold text-yellow-600">
+                          <div className="text-xl md:text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                             ${Number(lote.comision_total).toFixed(2)}
                           </div>
                           <p className="text-xs text-muted-foreground">
@@ -242,7 +242,7 @@ export function VentasPage() {
                         </div>
                         <div className="col-span-2">
                           <span className="text-muted-foreground">Comisión:</span>
-                          <span className="ml-1 font-medium text-yellow-600">
+                          <span className="ml-1 font-medium text-yellow-600 dark:text-yellow-400">
                             {lote.comision_tipo === 'monto'
                               ? `$${Number(lote.comision_rrpp_monto).toFixed(2)} por venta`
                               : `${Number(lote.comision_rrpp_porcentaje).toFixed(2)}%`
