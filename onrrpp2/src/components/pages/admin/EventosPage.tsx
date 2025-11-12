@@ -86,6 +86,9 @@ export function EventosPage() {
     cantidad_maxima: '',
     precio: '',
     es_vip: false,
+    comision_tipo: 'monto' as 'monto' | 'porcentaje',
+    comision_rrpp_monto: '',
+    comision_rrpp_porcentaje: '',
   })
   const [deleteLoteDialogOpen, setDeleteLoteDialogOpen] = useState(false)
 
@@ -379,6 +382,9 @@ export function EventosPage() {
         cantidad_maxima: lote.cantidad_maxima.toString(),
         precio: lote.precio.toString(),
         es_vip: lote.es_vip,
+        comision_tipo: lote.comision_tipo,
+        comision_rrpp_monto: lote.comision_rrpp_monto.toString(),
+        comision_rrpp_porcentaje: lote.comision_rrpp_porcentaje.toString(),
       })
     } else {
       setSelectedLote(null)
@@ -387,6 +393,9 @@ export function EventosPage() {
         cantidad_maxima: '',
         precio: '',
         es_vip: false,
+        comision_tipo: 'monto',
+        comision_rrpp_monto: '',
+        comision_rrpp_porcentaje: '',
       })
     }
     setLoteFormDialogOpen(true)
@@ -400,6 +409,9 @@ export function EventosPage() {
       cantidad_maxima: '',
       precio: '',
       es_vip: false,
+      comision_tipo: 'monto',
+      comision_rrpp_monto: '',
+      comision_rrpp_porcentaje: '',
     })
   }
 
@@ -410,6 +422,8 @@ export function EventosPage() {
 
     const cantidadMaxima = parseInt(loteFormData.cantidad_maxima)
     const precio = parseFloat(loteFormData.precio)
+    const comisionMonto = parseFloat(loteFormData.comision_rrpp_monto) || 0
+    const comisionPorcentaje = parseFloat(loteFormData.comision_rrpp_porcentaje) || 0
 
     if (isNaN(cantidadMaxima) || cantidadMaxima <= 0) {
       toast.error('Cantidad máxima inválida')
@@ -421,6 +435,19 @@ export function EventosPage() {
       return
     }
 
+    // Validar comisiones según el tipo
+    if (loteFormData.comision_tipo === 'monto') {
+      if (isNaN(comisionMonto) || comisionMonto < 0) {
+        toast.error('Comisión en pesos inválida')
+        return
+      }
+    } else {
+      if (isNaN(comisionPorcentaje) || comisionPorcentaje < 0 || comisionPorcentaje > 100) {
+        toast.error('Comisión en porcentaje inválida (debe ser entre 0 y 100)')
+        return
+      }
+    }
+
     try {
       if (selectedLote) {
         // Actualizar lote existente
@@ -429,6 +456,9 @@ export function EventosPage() {
           cantidad_maxima: cantidadMaxima,
           precio: precio,
           es_vip: loteFormData.es_vip,
+          comision_tipo: loteFormData.comision_tipo,
+          comision_rrpp_monto: comisionMonto,
+          comision_rrpp_porcentaje: comisionPorcentaje,
         }
         const { error } = await lotesService.updateLote(selectedLote.id, updates)
         if (error) throw error
@@ -440,6 +470,9 @@ export function EventosPage() {
           cantidad_maxima: cantidadMaxima,
           precio: precio,
           es_vip: loteFormData.es_vip,
+          comision_tipo: loteFormData.comision_tipo,
+          comision_rrpp_monto: comisionMonto,
+          comision_rrpp_porcentaje: comisionPorcentaje,
           uuid_evento: selectedEvento.id,
         }
         const { error } = await lotesService.createLote(newLote)
@@ -1074,6 +1107,96 @@ export function EventosPage() {
                   <Crown className="h-4 w-4 text-yellow-500" />
                   Es VIP (permite múltiples escaneos)
                 </label>
+              </div>
+
+              {/* Sección de comisión RRPP */}
+              <div className="border-t pt-4 space-y-4">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Comisión para RRPP
+                </h4>
+
+                <div className="space-y-2">
+                  <Label>Tipo de comisión</Label>
+                  <div className="flex gap-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="comision-monto"
+                        name="comision_tipo"
+                        value="monto"
+                        checked={loteFormData.comision_tipo === 'monto'}
+                        onChange={(e) =>
+                          setLoteFormData({ ...loteFormData, comision_tipo: e.target.value as 'monto' | 'porcentaje' })
+                        }
+                        className="h-4 w-4"
+                      />
+                      <label htmlFor="comision-monto" className="text-sm">
+                        Monto fijo en $
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="comision-porcentaje"
+                        name="comision_tipo"
+                        value="porcentaje"
+                        checked={loteFormData.comision_tipo === 'porcentaje'}
+                        onChange={(e) =>
+                          setLoteFormData({ ...loteFormData, comision_tipo: e.target.value as 'monto' | 'porcentaje' })
+                        }
+                        className="h-4 w-4"
+                      />
+                      <label htmlFor="comision-porcentaje" className="text-sm">
+                        Porcentaje %
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {loteFormData.comision_tipo === 'monto' ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="lote-comision-monto">Comisión en pesos por venta</Label>
+                    <Input
+                      id="lote-comision-monto"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={loteFormData.comision_rrpp_monto}
+                      onChange={(e) =>
+                        setLoteFormData({ ...loteFormData, comision_rrpp_monto: e.target.value })
+                      }
+                      placeholder="Ej: 500.00"
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      El RRPP ganará este monto fijo por cada venta de este lote
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="lote-comision-porcentaje">Comisión en porcentaje</Label>
+                    <Input
+                      id="lote-comision-porcentaje"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={loteFormData.comision_rrpp_porcentaje}
+                      onChange={(e) =>
+                        setLoteFormData({ ...loteFormData, comision_rrpp_porcentaje: e.target.value })
+                      }
+                      placeholder="Ej: 15.00"
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      El RRPP ganará este porcentaje del precio de venta
+                      {loteFormData.precio && loteFormData.comision_rrpp_porcentaje &&
+                        ` (${parseFloat(loteFormData.precio) * parseFloat(loteFormData.comision_rrpp_porcentaje) / 100} pesos por venta)`
+                      }
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

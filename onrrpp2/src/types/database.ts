@@ -1,5 +1,6 @@
 export type UserRole = 'admin' | 'rrpp' | 'seguridad'
 export type MetodoPago = 'efectivo' | 'transferencia' | 'mixto'
+export type ComisionTipo = 'monto' | 'porcentaje'
 
 export interface Personal {
   id: string
@@ -44,6 +45,9 @@ export interface Lote {
   cantidad_actual: number
   precio: number
   es_vip: boolean
+  comision_tipo: ComisionTipo
+  comision_rrpp_monto: number
+  comision_rrpp_porcentaje: number
   uuid_evento: string
   activo: boolean
   created_at: string
@@ -119,6 +123,7 @@ export interface VentaConDetalles extends Venta {
   lote: {
     nombre: string
     precio: number
+    es_vip: boolean
   }
   rrpp: {
     nombre: string
@@ -132,4 +137,21 @@ export interface Ubicacion {
   localidad: string
   created_at: string
   updated_at: string
+}
+
+export interface VentasRRPPStats {
+  id_rrpp: string
+  uuid_evento: string
+  uuid_lote: string
+  lote_nombre: string
+  lote_precio: number
+  lote_es_vip: boolean
+  comision_tipo: ComisionTipo
+  comision_rrpp_monto: number
+  comision_rrpp_porcentaje: number
+  cantidad_ventas: number
+  monto_total_vendido: number
+  monto_efectivo: number
+  monto_transferencia: number
+  comision_total: number
 }

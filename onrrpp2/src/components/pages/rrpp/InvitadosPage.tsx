@@ -121,9 +121,11 @@ export function InvitadosPage() {
   const [showLocalidadDropdown, setShowLocalidadDropdown] = useState(false)
 
   useEffect(() => {
-    loadEventos()
+    if (user) {
+      loadEventos()
+    }
     loadDepartamentos()
-  }, [])
+  }, [user])
 
   const loadDepartamentos = async () => {
     const { data, error } = await ubicacionesService.getDepartamentos()
@@ -257,16 +259,43 @@ export function InvitadosPage() {
   }, [lotes, pendingLoteId])
 
   const loadEventos = async () => {
-    const { data, error } = await eventosService.getEventos()
-    if (error) {
+    if (!user) return
+
+    // Obtener todos los eventos activos del club
+    const { data: todosEventos, error: errorEventos } = await eventosService.getEventos()
+
+    if (errorEventos) {
       toast.error('Error al cargar eventos', {
-        description: error.message,
+        description: errorEventos.message,
       })
-    } else if (data) {
+      setLoading(false)
+      return
+    }
+
+    // Obtener las estadísticas del RRPP
+    const { data: statsRRPP, error: errorStats } = await eventosService.getEventosRRPPStats(user.id)
+
+    if (!errorStats && todosEventos) {
+      // Crear un mapa de stats por evento_id
+      const statsMap = new Map(
+        (statsRRPP || []).map(stat => [stat.evento_id, stat])
+      )
+
+      // Mapear todos los eventos con sus stats (o 0 si no tiene invitados)
+      const eventosMapeados: Evento[] = todosEventos.map(evento => {
+        const stat = statsMap.get(evento.id)
+        return {
+          ...evento,
+          total_invitados: stat?.mis_invitados || 0,
+          total_ingresados: stat?.mis_ingresados || 0,
+        }
+      })
+
       // Filtrar solo eventos activos
-      const eventosActivos = data.filter(e => e.estado)
+      const eventosActivos = eventosMapeados.filter(e => e.estado)
       setEventos(eventosActivos)
     }
+
     setLoading(false)
   }
 

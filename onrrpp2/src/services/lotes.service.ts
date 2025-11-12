@@ -1,11 +1,14 @@
 import { supabase } from '@/lib/supabase'
-import type { Lote } from '@/types/database'
+import type { Lote, ComisionTipo } from '@/types/database'
 
 export interface CreateLoteDTO {
   nombre: string
   cantidad_maxima: number
   precio: number
   es_vip: boolean
+  comision_tipo: ComisionTipo
+  comision_rrpp_monto: number
+  comision_rrpp_porcentaje: number
   uuid_evento: string
 }
 
@@ -14,6 +17,9 @@ export interface UpdateLoteDTO {
   cantidad_maxima?: number
   precio?: number
   es_vip?: boolean
+  comision_tipo?: ComisionTipo
+  comision_rrpp_monto?: number
+  comision_rrpp_porcentaje?: number
   activo?: boolean
 }
 

@@ -4,7 +4,6 @@ import type { InvitadoConDetalles } from '@/types/database'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
 import {
   ScanLine,
@@ -24,6 +23,7 @@ export function ScannerPage() {
   const [invitado, setInvitado] = useState<InvitadoConDetalles | null>(null)
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false)
   const [showErrorAnimation, setShowErrorAnimation] = useState(false)
+  const [showInvalidQRAnimation, setShowInvalidQRAnimation] = useState(false)
   const [countdown, setCountdown] = useState(0) // Contador para mostrar al usuario
 
   // Usar useRef para bandera inmediata (no espera re-render)
@@ -139,12 +139,9 @@ export function ScannerPage() {
     const { data, error } = await invitadosService.getInvitadoByQR(qrCode)
 
     if (error || !data) {
-      toast.error('QR no válido', {
-        description: 'El código QR no corresponde a ningún invitado',
-      })
-      // Reiniciar escáner y resetear bandera
-      isProcessingRef.current = false
-      await startScanner()
+      // Mostrar modal de QR inválido
+      setShowInvalidQRAnimation(true)
+      // NO reiniciar automáticamente - esperar a que cierre el modal
       return
     }
 
@@ -200,6 +197,7 @@ export function ScannerPage() {
     // PASO 1: Cerrar modales PRIMERO
     setShowSuccessAnimation(false)
     setShowErrorAnimation(false)
+    setShowInvalidQRAnimation(false)
     setInvitado(null)
 
     // PASO 2: Verificar si hay scanner para limpiar (puede que ya esté detenido)
@@ -233,10 +231,6 @@ export function ScannerPage() {
     await startScanner()
   }
 
-  const getInitials = (nombre: string, apellido: string) => {
-    return `${nombre.charAt(0)}${apellido.charAt(0)}`.toUpperCase()
-  }
-
   return (
     <div className="space-y-6">
       <div>
@@ -247,7 +241,7 @@ export function ScannerPage() {
       </div>
 
       {/* Escáner - SIEMPRE visible pero oculto cuando hay modal */}
-      <Card className={showSuccessAnimation || showErrorAnimation ? 'hidden' : ''}>
+      <Card className={showSuccessAnimation || showErrorAnimation || showInvalidQRAnimation ? 'hidden' : ''}>
         <CardHeader>
           <CardTitle>Escáner de QR</CardTitle>
           <CardDescription>
@@ -335,13 +329,14 @@ export function ScannerPage() {
 
                 {/* Foto de perfil (solo VIP) */}
                 {invitado.lote?.es_vip && invitado.profile_image_url && (
-                  <div className="flex justify-center mb-4">
-                    <Avatar className="w-32 h-32 border-4 border-green-500">
-                      <AvatarImage src={invitado.profile_image_url} alt={`${invitado.nombre} ${invitado.apellido}`} />
-                      <AvatarFallback className="text-2xl">
-                        {getInitials(invitado.nombre, invitado.apellido)}
-                      </AvatarFallback>
-                    </Avatar>
+                  <div className="flex justify-center mb-6">
+                    <div className="relative w-48 h-48 rounded-full overflow-hidden border-4 border-green-500 shadow-xl">
+                      <img
+                        src={invitado.profile_image_url}
+                        alt={`${invitado.nombre} ${invitado.apellido}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -467,6 +462,63 @@ export function ScannerPage() {
                         })}
                       </p>
                     )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {showInvalidQRAnimation && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          >
+            <Card className="w-full max-w-md mx-4 border-red-500 border-2 relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 right-4 z-10 h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow-lg"
+                onClick={() => {
+                  setShowInvalidQRAnimation(false)
+                  handleNuevoEscaneo()
+                }}
+              >
+                <X className="h-5 w-5 text-gray-700" />
+              </Button>
+              <CardContent className="pt-6">
+                {/* Animación de error */}
+                <motion.div
+                  initial={{ scale: 0, rotate: 0 }}
+                  animate={{ scale: 1, rotate: [0, -10, 10, -10, 0] }}
+                  transition={{
+                    scale: { type: 'spring', stiffness: 200, damping: 15 },
+                    rotate: { duration: 0.5, delay: 0.2 }
+                  }}
+                  className="flex justify-center mb-6"
+                >
+                  <div className="w-24 h-24 rounded-full bg-red-500 flex items-center justify-center">
+                    <X className="h-16 w-16 text-white stroke-[3]" />
+                  </div>
+                </motion.div>
+
+                {/* Mensaje de error */}
+                <div className="space-y-4 text-center">
+                  <div>
+                    <h2 className="text-3xl font-bold text-red-600">
+                      ¡QR Inválido!
+                    </h2>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-lg text-muted-foreground">
+                      El código QR escaneado no corresponde a ningún invitado registrado
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Por favor, verifica que el código QR sea correcto
+                    </p>
                   </div>
                 </div>
               </CardContent>

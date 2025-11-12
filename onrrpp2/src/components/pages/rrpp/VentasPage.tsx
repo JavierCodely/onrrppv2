@@ -22,13 +22,12 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import {
-  DollarSign,
-  CreditCard,
-  Banknote,
   TrendingUp,
   Users,
   Calendar,
-  Wallet,
+  Tag,
+  Crown,
+  Ticket,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -48,7 +47,7 @@ export function VentasPage() {
   useEffect(() => {
     if (selectedEvento && user) {
       loadVentas()
-      loadStats()
+      loadStatsWithCommissions()
     }
   }, [selectedEvento, user])
 
@@ -83,11 +82,11 @@ export function VentasPage() {
     setLoading(false)
   }
 
-  const loadStats = async () => {
+  const loadStatsWithCommissions = async () => {
     if (!user || !selectedEvento) return
 
     try {
-      const data = await ventasService.getVentasStatsByRRPP(user.id, selectedEvento)
+      const data = await ventasService.getVentasStatsWithCommissionsByRRPP(user.id, selectedEvento)
       setStats(data)
     } catch (error) {
       toast.error('Error al cargar estadísticas', {
@@ -147,143 +146,116 @@ export function VentasPage() {
 
       {selectedEvento && stats && (
         <>
-          {/* Tarjetas de estadísticas */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {/* Tarjetas de comisiones */}
+          <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Ventas
+                  Total Invitados Vendidos
                 </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.total_ventas}</div>
                 <p className="text-xs text-muted-foreground">
-                  Invitados vendidos
+                  Invitados vendidos en este evento
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-yellow-500 bg-gradient-to-r from-yellow-50 to-orange-50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Recaudado
+                  Tu Comisión Total
                 </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <TrendingUp className="h-4 w-4 text-yellow-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  ${stats.monto_total_general.toFixed(2)}
+                <div className="text-2xl font-bold text-yellow-600">
+                  ${stats.comision_total !== undefined ? stats.comision_total.toFixed(2) : '0.00'}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Total general
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  En Efectivo
-                </CardTitle>
-                <Banknote className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  ${stats.monto_total_efectivo.toFixed(2)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {stats.total_efectivo} ventas
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  En Transferencia
-                </CardTitle>
-                <CreditCard className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  ${stats.monto_total_transferencia.toFixed(2)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {stats.total_transferencia + stats.total_mixto} ventas
+                  Total de comisiones ganadas
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Desglose por método de pago */}
-          <div className="grid gap-4 md:grid-cols-3">
+          {/* Comisiones por lote */}
+          {stats.ventas_por_lote && stats.ventas_por_lote.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Banknote className="h-4 w-4 text-green-600" />
-                  Efectivo
+                <CardTitle className="flex items-center gap-2">
+                  <Tag className="h-5 w-5" />
+                  Comisiones por Lote
                 </CardTitle>
+                <CardDescription>
+                  Detalle de tus ganancias por cada tipo de lote vendido
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Ventas:</span>
-                    <span className="font-semibold">{stats.total_efectivo}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Monto:</span>
-                    <span className="font-semibold text-green-600">
-                      ${stats.monto_total_efectivo.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                <div className="space-y-3">
+                  {stats.ventas_por_lote.map((lote) => (
+                    <div
+                      key={lote.uuid_lote}
+                      className="p-4 border rounded-lg hover:bg-muted/50 transition-colors space-y-3"
+                    >
+                      {/* Header del lote */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <h4 className="font-semibold text-base">
+                              {lote.lote_nombre}
+                            </h4>
+                            {lote.lote_es_vip ? (
+                              <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white gap-1 text-xs">
+                                <Crown className="h-3 w-3" />
+                                VIP
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="gap-1 text-xs">
+                                <Ticket className="h-3 w-3" />
+                                Normal
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-xl md:text-2xl font-bold text-yellow-600">
+                            ${Number(lote.comision_total).toFixed(2)}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Total
+                          </p>
+                        </div>
+                      </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-blue-600" />
-                  Transferencia
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Ventas:</span>
-                    <span className="font-semibold">{stats.total_transferencia}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Transferencias:</span>
-                    <span className="font-semibold text-blue-600">
-                      ${stats.monto_total_transferencia.toFixed(2)}
-                    </span>
-                  </div>
+                      {/* Detalles del lote */}
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Ventas:</span>
+                          <span className="ml-1 font-medium">{lote.cantidad_ventas}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Precio:</span>
+                          <span className="ml-1 font-medium">${Number(lote.lote_precio).toFixed(2)}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-muted-foreground">Comisión:</span>
+                          <span className="ml-1 font-medium text-yellow-600">
+                            {lote.comision_tipo === 'monto'
+                              ? `$${Number(lote.comision_rrpp_monto).toFixed(2)} por venta`
+                              : `${Number(lote.comision_rrpp_porcentaje).toFixed(2)}%`
+                            }
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Wallet className="h-4 w-4 text-purple-600" />
-                  Mixto
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Ventas:</span>
-                    <span className="font-semibold">{stats.total_mixto}</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Combinación de efectivo y transferencia
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          )}
 
           {/* Tabla de ventas */}
           <Card>
@@ -313,7 +285,7 @@ export function VentasPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Invitado</TableHead>
-                          <TableHead>Lote</TableHead>
+                          <TableHead>Evento / Lote</TableHead>
                           <TableHead>Método de Pago</TableHead>
                           <TableHead className="text-right">Efectivo</TableHead>
                           <TableHead className="text-right">Transferencia</TableHead>
@@ -328,8 +300,21 @@ export function VentasPage() {
                               <div>{venta.invitado.nombre} {venta.invitado.apellido}</div>
                             </TableCell>
                             <TableCell>
-                              <div className="text-sm">
-                                {venta.lote.nombre}
+                              <div className="space-y-1">
+                                <div className="text-sm font-medium">{venta.evento.nombre}</div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-muted-foreground">{venta.lote.nombre}</span>
+                                  {venta.lote.es_vip ? (
+                                    <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white gap-1 text-xs h-5">
+                                      <Crown className="h-2.5 w-2.5" />
+                                      VIP
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="secondary" className="gap-1 text-xs h-5">
+                                      <Ticket className="h-2.5 w-2.5" />
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell>
@@ -374,13 +359,28 @@ export function VentasPage() {
                         <CardContent className="p-4">
                           <div className="space-y-3">
                             <div className="flex items-start justify-between">
-                              <div>
+                              <div className="flex-1 min-w-0">
                                 <h3 className="font-semibold">
                                   {venta.invitado.nombre} {venta.invitado.apellido}
                                 </h3>
-                                <p className="text-xs text-muted-foreground">
-                                  {venta.lote.nombre}
+                                <p className="text-xs font-medium text-muted-foreground">
+                                  {venta.evento.nombre}
                                 </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <p className="text-xs text-muted-foreground">
+                                    {venta.lote.nombre}
+                                  </p>
+                                  {venta.lote.es_vip ? (
+                                    <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white gap-1 text-xs h-4">
+                                      <Crown className="h-2.5 w-2.5" />
+                                      VIP
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="secondary" className="gap-1 text-xs h-4">
+                                      <Ticket className="h-2.5 w-2.5" />
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                               <Badge className={getMetodoPagoBadgeColor(venta.metodo_pago)}>
                                 {venta.metodo_pago.toUpperCase()}

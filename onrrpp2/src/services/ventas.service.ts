@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { Venta, VentaConDetalles, MetodoPago } from '@/types/database'
+import type { Venta, VentaConDetalles, MetodoPago, VentasRRPPStats } from '@/types/database'
 
 export interface CreateVentaInput {
   uuid_invitado: string
@@ -28,6 +28,8 @@ export interface VentasStats {
   monto_total_efectivo: number
   monto_total_transferencia: number
   monto_total_general: number
+  comision_total?: number
+  ventas_por_lote?: VentasRRPPStats[]
 }
 
 class VentasService {
@@ -86,7 +88,7 @@ class VentasService {
         *,
         invitado:invitados!uuid_invitado(nombre, apellido, dni),
         evento:eventos!uuid_evento(nombre),
-        lote:lotes!uuid_lote(nombre, precio),
+        lote:lotes!uuid_lote(nombre, precio, es_vip),
         rrpp:personal!id_rrpp(nombre, apellido)
       `)
       .eq('uuid_evento', uuid_evento)
@@ -110,7 +112,7 @@ class VentasService {
         *,
         invitado:invitados!uuid_invitado(nombre, apellido, dni),
         evento:eventos!uuid_evento(nombre),
-        lote:lotes!uuid_lote(nombre, precio),
+        lote:lotes!uuid_lote(nombre, precio, es_vip),
         rrpp:personal!id_rrpp(nombre, apellido)
       `)
       .eq('id_rrpp', id_rrpp)
@@ -271,6 +273,49 @@ class VentasService {
     }
 
     return !!data
+  }
+
+  /**
+   * Get sales statistics by lote for a specific RRPP with commissions
+   */
+  async getVentasRRPPStatsByLote(id_rrpp: string, uuid_evento: string): Promise<VentasRRPPStats[]> {
+    const { data, error } = await supabase
+      .from('ventas_rrpp_stats')
+      .select('*')
+      .eq('id_rrpp', id_rrpp)
+      .eq('uuid_evento', uuid_evento)
+      .order('lote_nombre')
+
+    if (error) {
+      console.error('Error fetching ventas RRPP stats by lote:', error)
+      throw new Error(error.message)
+    }
+
+    return data as VentasRRPPStats[]
+  }
+
+  /**
+   * Get enhanced sales statistics for a specific RRPP including commissions by lote
+   */
+  async getVentasStatsWithCommissionsByRRPP(id_rrpp: string, uuid_evento?: string): Promise<VentasStats> {
+    // Get basic stats
+    const basicStats = await this.getVentasStatsByRRPP(id_rrpp, uuid_evento)
+
+    // If evento is specified, get detailed stats by lote
+    if (uuid_evento) {
+      const ventasPorLote = await this.getVentasRRPPStatsByLote(id_rrpp, uuid_evento)
+
+      // Calculate total commissions from all lotes
+      const comision_total = ventasPorLote.reduce((sum, lote) => sum + Number(lote.comision_total), 0)
+
+      return {
+        ...basicStats,
+        comision_total,
+        ventas_por_lote: ventasPorLote,
+      }
+    }
+
+    return basicStats
   }
 }
 
