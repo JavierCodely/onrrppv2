@@ -250,6 +250,61 @@ export function InvitadosPage() {
     }
   }, [user, selectedEvento])
 
+  // Realtime para actualizar totales en las cards de eventos
+  useEffect(() => {
+    if (!user) return
+
+    // Suscribirse a cambios en la tabla invitados para actualizar contadores
+    const totalsChannel = supabase
+      .channel('invitados-totals-rrpp')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'invitados',
+        },
+        async (payload: RealtimePostgresChangesPayload<any>) => {
+          console.log('📡 Realtime cambio en invitados para totales:', payload.eventType)
+
+          // Solo actualizar si el cambio afecta a mis invitados
+          const invitadoAfectado = payload.new || payload.old
+          if (invitadoAfectado && invitadoAfectado.id_rrpp === user.id) {
+            const eventoId = invitadoAfectado.uuid_evento
+
+            // Recargar estadísticas del RRPP para este evento específico
+            const { data: statsRRPP, error } = await eventosService.getEventosRRPPStats(user.id)
+
+            if (!error && statsRRPP) {
+              // Actualizar solo el evento afectado
+              setEventos((prevEventos) =>
+                prevEventos.map((evento) => {
+                  if (evento.id === eventoId) {
+                    const stat = statsRRPP.find(s => s.evento_id === eventoId)
+                    return {
+                      ...evento,
+                      total_invitados: stat?.mis_invitados || 0,
+                      total_ingresados: stat?.mis_ingresados || 0,
+                    }
+                  }
+                  return evento
+                })
+              )
+              console.log('📡 Contadores actualizados para evento:', eventoId)
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Estado de suscripción totales RRPP:', status)
+      })
+
+    return () => {
+      console.log('🔌 Desuscribiendo de totales RRPP')
+      totalsChannel.unsubscribe()
+    }
+  }, [user])
+
   // Abrir dialog después de que se carguen los lotes
   useEffect(() => {
     if (pendingLoteId && lotes.length > 0) {

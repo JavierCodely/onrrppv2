@@ -1,0 +1,276 @@
+import { supabase } from '@/lib/supabase'
+
+export interface DashboardFilters {
+  eventoId?: string
+  rrppId?: string
+  sexo?: 'hombre' | 'mujer'
+  departamento?: string
+}
+
+export interface DashboardStats {
+  total_invitados: number
+  total_ingresados: number
+  total_invitados_mujeres: number
+  total_ingresados_mujeres: number
+  total_invitados_hombres: number
+  total_ingresados_hombres: number
+}
+
+export interface HourlyIngresos {
+  hora: string
+  cantidad: number
+}
+
+export interface LocationStats {
+  ubicacion: string
+  cantidad: number
+}
+
+class AnalyticsService {
+  /**
+   * Obtener estadísticas generales con filtros
+   */
+  async getDashboardStats(filters: DashboardFilters = {}): Promise<{
+    data: DashboardStats | null
+    error: Error | null
+  }> {
+    try {
+      let query = supabase
+        .from('invitados')
+        .select('sexo, ingresado')
+
+      // Aplicar filtros
+      if (filters.eventoId) {
+        query = query.eq('uuid_evento', filters.eventoId)
+      }
+      if (filters.rrppId) {
+        query = query.eq('id_rrpp', filters.rrppId)
+      }
+      if (filters.sexo) {
+        query = query.eq('sexo', filters.sexo)
+      }
+      if (filters.departamento) {
+        query = query.eq('departamento', filters.departamento)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      // Calcular estadísticas
+      const stats: DashboardStats = {
+        total_invitados: data?.length || 0,
+        total_ingresados: data?.filter(i => i.ingresado).length || 0,
+        total_invitados_mujeres: data?.filter(i => i.sexo === 'mujer').length || 0,
+        total_ingresados_mujeres: data?.filter(i => i.sexo === 'mujer' && i.ingresado).length || 0,
+        total_invitados_hombres: data?.filter(i => i.sexo === 'hombre').length || 0,
+        total_ingresados_hombres: data?.filter(i => i.sexo === 'hombre' && i.ingresado).length || 0,
+      }
+
+      return { data: stats, error: null }
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error)
+      return { data: null, error: error as Error }
+    }
+  }
+
+  /**
+   * Obtener ingresos por hora
+   */
+  async getHourlyIngresos(filters: DashboardFilters = {}): Promise<{
+    data: HourlyIngresos[] | null
+    error: Error | null
+  }> {
+    try {
+      let query = supabase
+        .from('invitados')
+        .select('fecha_ingreso')
+        .eq('ingresado', true)
+        .not('fecha_ingreso', 'is', null)
+
+      // Aplicar filtros
+      if (filters.eventoId) {
+        query = query.eq('uuid_evento', filters.eventoId)
+      }
+      if (filters.rrppId) {
+        query = query.eq('id_rrpp', filters.rrppId)
+      }
+      if (filters.sexo) {
+        query = query.eq('sexo', filters.sexo)
+      }
+      if (filters.departamento) {
+        query = query.eq('departamento', filters.departamento)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      // Agrupar por hora
+      const hourlyMap = new Map<string, number>()
+
+      data?.forEach((invitado) => {
+        if (invitado.fecha_ingreso) {
+          const date = new Date(invitado.fecha_ingreso)
+          const hour = date.getHours().toString().padStart(2, '0') + ':00'
+          hourlyMap.set(hour, (hourlyMap.get(hour) || 0) + 1)
+        }
+      })
+
+      // Convertir a array y ordenar
+      const hourlyData: HourlyIngresos[] = Array.from(hourlyMap.entries())
+        .map(([hora, cantidad]) => ({ hora, cantidad }))
+        .sort((a, b) => a.hora.localeCompare(b.hora))
+
+      return { data: hourlyData, error: null }
+    } catch (error) {
+      console.error('Error fetching hourly ingresos:', error)
+      return { data: null, error: error as Error }
+    }
+  }
+
+  /**
+   * Obtener estadísticas por ubicación (departamento o localidad)
+   */
+  async getLocationStats(filters: DashboardFilters = {}, groupBy: 'departamento' | 'localidad' = 'departamento'): Promise<{
+    data: LocationStats[] | null
+    error: Error | null
+  }> {
+    try {
+      // Seleccionar todos los campos necesarios
+      let query = supabase
+        .from('invitados')
+        .select('departamento, localidad, ingresado, uuid_evento, id_rrpp, sexo')
+        .eq('ingresado', true)
+        .not(groupBy, 'is', null)
+
+      // Aplicar filtros
+      if (filters.eventoId) {
+        query = query.eq('uuid_evento', filters.eventoId)
+      }
+      if (filters.rrppId) {
+        query = query.eq('id_rrpp', filters.rrppId)
+      }
+      if (filters.sexo) {
+        query = query.eq('sexo', filters.sexo)
+      }
+      if (filters.departamento && groupBy === 'localidad') {
+        query = query.eq('departamento', filters.departamento)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      console.log('📍 Datos de ubicación recibidos:', data?.length, 'registros')
+      console.log('📍 Agrupando por:', groupBy)
+      console.log('📍 Primeros 5 registros:', data?.slice(0, 5))
+
+      // Agrupar por ubicación
+      const locationMap = new Map<string, number>()
+
+      data?.forEach((invitado: any) => {
+        const location = invitado[groupBy]
+        if (location) {
+          locationMap.set(location, (locationMap.get(location) || 0) + 1)
+        }
+      })
+
+      console.log('📍 Ubicaciones únicas encontradas:', locationMap.size)
+      console.log('📍 Mapa de ubicaciones:', Array.from(locationMap.entries()))
+
+      // Convertir a array y ordenar por cantidad descendente
+      const locationData: LocationStats[] = Array.from(locationMap.entries())
+        .map(([ubicacion, cantidad]) => ({ ubicacion, cantidad }))
+        .sort((a, b) => b.cantidad - a.cantidad)
+        .slice(0, 10) // Top 10 ubicaciones
+
+      console.log('📍 Datos finales para el gráfico:', locationData)
+
+      return { data: locationData, error: null }
+    } catch (error) {
+      console.error('Error fetching location stats:', error)
+      return { data: null, error: error as Error }
+    }
+  }
+
+  /**
+   * Obtener lista de todos los eventos del club
+   */
+  async getEventos(): Promise<{
+    data: Array<{ id: string; nombre: string }> | null
+    error: Error | null
+  }> {
+    try {
+      const { data, error } = await supabase
+        .from('eventos')
+        .select('id, nombre')
+        .order('fecha', { ascending: false })
+
+      if (error) throw error
+
+      return { data, error: null }
+    } catch (error) {
+      console.error('Error fetching eventos:', error)
+      return { data: null, error: error as Error }
+    }
+  }
+
+  /**
+   * Obtener lista de todos los RRPPs del club
+   */
+  async getRRPPs(): Promise<{
+    data: Array<{ id: string; nombre: string; apellido: string }> | null
+    error: Error | null
+  }> {
+    try {
+      const { data, error } = await supabase
+        .from('personal')
+        .select('id, nombre, apellido')
+        .eq('rol', 'rrpp')
+        .eq('activo', true)
+        .order('apellido')
+
+      if (error) throw error
+
+      return { data, error: null }
+    } catch (error) {
+      console.error('Error fetching RRPPs:', error)
+      return { data: null, error: error as Error }
+    }
+  }
+
+  /**
+   * Obtener departamentos únicos de invitados
+   */
+  async getDepartamentos(eventoId?: string): Promise<{
+    data: string[] | null
+    error: Error | null
+  }> {
+    try {
+      let query = supabase
+        .from('invitados')
+        .select('departamento')
+        .not('departamento', 'is', null)
+
+      if (eventoId) {
+        query = query.eq('uuid_evento', eventoId)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      // Obtener valores únicos
+      const departamentos = Array.from(new Set(data?.map(i => i.departamento).filter(Boolean)))
+        .sort()
+
+      return { data: departamentos, error: null }
+    } catch (error) {
+      console.error('Error fetching departamentos:', error)
+      return { data: null, error: error as Error }
+    }
+  }
+}
+
+export const analyticsService = new AnalyticsService()
