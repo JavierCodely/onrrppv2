@@ -502,7 +502,19 @@ export function InvitadosPage() {
 
     if (!user || !selectedEvento) return
 
+    // Validar que se haya seleccionado un lote (obligatorio)
+    if (!formData.uuid_lote) {
+      toast.error('Debe seleccionar un lote')
+      return
+    }
+
     const loteSeleccionado = lotes.find(l => l.id === formData.uuid_lote)
+
+    // Validar que el lote existe
+    if (!loteSeleccionado) {
+      toast.error('El lote seleccionado no existe')
+      return
+    }
 
     // Validar imagen de perfil para lotes VIP
     if (loteSeleccionado && loteSeleccionado.es_vip) {
@@ -631,7 +643,7 @@ export function InvitadosPage() {
         dni: `${formData.nombre.trim()}-${formData.apellido.trim()}-${Date.now()}`,
         sexo: formData.sexo,
         uuid_evento: selectedEvento,
-        uuid_lote: formData.uuid_lote || null,
+        uuid_lote: formData.uuid_lote, // Obligatorio, ya validado arriba
         profile_image_url: profileImageUrl || null,
       }
 
@@ -1270,7 +1282,7 @@ export function InvitadosPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="lote">Lote</Label>
+                <Label htmlFor="lote">Lote *</Label>
                 <Select
                   value={formData.uuid_lote}
                   onValueChange={(value) => {

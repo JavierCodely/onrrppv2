@@ -15,6 +15,7 @@ import {
   Settings,
   Menu,
   Palette,
+  DollarSign,
 } from 'lucide-react'
 
 interface AdminLayoutProps {
@@ -31,6 +32,11 @@ const menuItems = [
     name: 'Eventos',
     icon: Calendar,
     path: '/dashboard/admin/eventos',
+  },
+  {
+    name: 'Ventas',
+    icon: DollarSign,
+    path: '/dashboard/admin/ventas',
   },
   {
     name: 'Empleados',
