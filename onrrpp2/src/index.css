@@ -201,10 +201,6 @@
 
   html {
     font-size: 13px;
-    -webkit-text-size-adjust: 100%;
-    -moz-text-size-adjust: 100%;
-    -ms-text-size-adjust: 100%;
-    text-size-adjust: 100%;
   }
 
   @media (min-width: 375px) {
@@ -221,18 +217,6 @@
 
   body {
     @apply bg-background text-foreground;
-    -webkit-text-size-adjust: 100%;
-    -moz-text-size-adjust: 100%;
-    -ms-text-size-adjust: 100%;
-    text-size-adjust: 100%;
-  }
-
-  /* Prevenir ajuste automático en inputs y otros elementos */
-  input, textarea, select, button {
-    -webkit-text-size-adjust: 100%;
-    -moz-text-size-adjust: 100%;
-    -ms-text-size-adjust: 100%;
-    text-size-adjust: 100%;
   }
 }
 
