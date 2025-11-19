@@ -200,7 +200,13 @@
   }
 
   html {
-    font-size: 14px;
+    font-size: 13px;
+  }
+
+  @media (min-width: 375px) {
+    html {
+      font-size: 13.5px;
+    }
   }
 
   @media (min-width: 768px) {
@@ -222,8 +228,42 @@
 
 /* Ajustes de tamaño de fuente para móviles */
 @layer base {
-  /* Reducir títulos en móvil */
-  @media (max-width: 767px) {
+  /* Ajustes para dispositivos muy pequeños (iPhone Mini, SE) */
+  @media (max-width: 374px) {
+    h1 {
+      @apply text-xl;
+    }
+    h2 {
+      @apply text-lg;
+    }
+    h3 {
+      @apply text-base;
+    }
+
+    .text-3xl {
+      @apply text-xl;
+    }
+    .text-2xl {
+      @apply text-lg;
+    }
+    .text-xl {
+      @apply text-base;
+    }
+
+    /* Reducir padding en cards y contenedores */
+    .p-6 {
+      @apply p-4;
+    }
+    .p-4 {
+      @apply p-3;
+    }
+    .gap-6 {
+      @apply gap-4;
+    }
+  }
+
+  /* Reducir títulos en móvil estándar */
+  @media (min-width: 375px) and (max-width: 767px) {
     h1 {
       @apply text-2xl;
     }
