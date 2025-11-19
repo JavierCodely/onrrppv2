@@ -1588,6 +1588,13 @@ export function InvitadosPage() {
                   {selectedInvitado.qr_code}
                 </div>
 
+                {/* Mensaje de advertencia */}
+                <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800">
+                  <p className="text-sm text-amber-900 dark:text-amber-100 text-center font-medium">
+                    El QR es único. No lo compartas con nadie o deberás abonar tu entrada nuevamente.
+                  </p>
+                </div>
+
                 {/* Botón cerrar */}
                 <Button
                   onClick={() => {
