@@ -1,5 +1,5 @@
-import { supabase } from '@/lib/supabase'
-import type { Evento } from '@/types/database'
+import { supabase } from '../lib/supabase'
+import type { Evento } from '../types/database'
 
 export interface CreateEventoDTO {
   nombre: string

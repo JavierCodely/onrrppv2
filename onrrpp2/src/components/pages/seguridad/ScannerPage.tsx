@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { invitadosService } from '@/services/invitados.service'
 import type { InvitadoConDetalles } from '@/types/database'
 import { Button } from '@/components/ui/button'
@@ -37,7 +37,7 @@ export function ScannerPage() {
     }
   }, [scanner])
 
-  const startScanner = async () => {
+  const startScanner = useCallback(async () => {
     console.log('🎬 startScanner llamado')
     console.log('📊 Estado - scanning:', scanning, 'scanner:', scanner, 'isProcessingRef:', isProcessingRef.current)
 
@@ -94,7 +94,7 @@ export function ScannerPage() {
         description: err?.message || 'Verifica los permisos',
       })
     }
-  }
+  }, [scanning, scanner])
 
   const stopScanner = async () => {
     if (scanner) {
@@ -126,8 +126,14 @@ export function ScannerPage() {
     console.log('🛑 Deteniendo scanner AHORA...')
     if (scanner) {
       try {
-        await scanner.stop()
-        console.log('✅ Scanner detenido')
+        // Verificar si el scanner está corriendo antes de detenerlo
+        const state = scanner.getState()
+        if (state === 2) { // 2 = Html5QrcodeScannerState.SCANNING
+          await scanner.stop()
+          console.log('✅ Scanner detenido')
+        } else {
+          console.log('ℹ️ Scanner ya estaba detenido (estado: ' + state + ')')
+        }
       } catch (err) {
         console.error('⚠️ Error al detener:', err)
       }
@@ -191,45 +197,76 @@ export function ScannerPage() {
     // NO cerrar automáticamente - solo con el botón X
   }
 
-  const handleNuevoEscaneo = async () => {
-    console.log('🔄 Cerrando modal y reiniciando...')
+  const handleNuevoEscaneo = useCallback(async () => {
+    console.log('🔄 Iniciando proceso de nuevo escaneo...')
 
-    // PASO 1: Cerrar modales PRIMERO
+    // PASO 1: Cerrar modales
     setShowSuccessAnimation(false)
     setShowErrorAnimation(false)
     setShowInvalidQRAnimation(false)
     setInvitado(null)
 
-    // PASO 2: Verificar si hay scanner para limpiar (puede que ya esté detenido)
-    if (scanner) {
-      console.log('🧹 Hay scanner, limpiando...')
-      try {
-        await scanner.clear()
-      } catch (err) {
-        console.log('⚠️ Error limpiando:', err)
+    // PASO 2: Resetear completamente (ignorar errores de limpieza)
+    try {
+      if (scanner) {
+        scanner.clear()
       }
-      setScanner(null)
-    } else {
-      console.log('✅ No hay scanner que limpiar')
+    } catch (e) {
+      console.log('Ignorando error de limpieza')
     }
 
-    // PASO 3: Resetear solo scanning (NO isProcessing todavía)
+    setScanner(null)
     setScanning(false)
+    isProcessingRef.current = false
 
     console.log('✅ Estados reseteados')
 
-    // PASO 4: Countdown visual de 2 segundos
-    console.log('⏰ Esperando 2 segundos antes de reactivar scanner...')
+    // PASO 3: Countdown visual de 2 segundos
     setCountdown(2)
     await new Promise(resolve => setTimeout(() => { setCountdown(1); resolve(undefined) }, 1000))
     await new Promise(resolve => setTimeout(() => { setCountdown(0); resolve(undefined) }, 1000))
 
-    // PASO 5: AHORA sí resetear isProcessing y reiniciar
-    isProcessingRef.current = false
-    console.log('🔓 isProcessingRef = false')
-    console.log('🎬 Reiniciando scanner...')
-    await startScanner()
-  }
+    // PASO 4: Esperar un poco más para que React actualice
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    // PASO 5: Forzar reinicio llamando a startScanner con estados limpios
+    console.log('🎬 Llamando a startScanner...')
+    setScanning(true)
+    await new Promise(resolve => setTimeout(resolve, 300))
+
+    const readerElement = document.getElementById('reader')
+    if (!readerElement) {
+      console.error('❌ No se encontró elemento reader')
+      setScanning(false)
+      return
+    }
+
+    try {
+      const html5QrCode = new Html5Qrcode('reader')
+
+      await html5QrCode.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        async (decodedText) => {
+          await handleQRDetected(decodedText)
+        },
+        () => {}
+      )
+
+      setScanner(html5QrCode)
+      console.log('✅ Cámara reiniciada exitosamente')
+    } catch (err: any) {
+      console.error('❌ Error:', err)
+      setScanning(false)
+      setScanner(null)
+      toast.error('Error al reiniciar cámara', {
+        description: err?.message || 'Intenta nuevamente',
+      })
+    }
+  }, [scanner])
 
   return (
     <div className="space-y-6">
@@ -386,6 +423,15 @@ export function ScannerPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Botón para cerrar y continuar escaneando */}
+                  <Button
+                    onClick={handleNuevoEscaneo}
+                    size="lg"
+                    className="w-full mt-8 bg-green-600 hover:bg-green-700 text-white text-lg py-6"
+                  >
+                    Continuar Escaneando
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -463,6 +509,15 @@ export function ScannerPage() {
                       </p>
                     )}
                   </div>
+
+                  {/* Botón para cerrar y continuar escaneando */}
+                  <Button
+                    onClick={handleNuevoEscaneo}
+                    size="lg"
+                    className="w-full mt-8 bg-red-600 hover:bg-red-700 text-white text-lg py-6"
+                  >
+                    Continuar Escaneando
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -520,6 +575,15 @@ export function ScannerPage() {
                       Por favor, verifica que el código QR sea correcto
                     </p>
                   </div>
+
+                  {/* Botón para cerrar y continuar escaneando */}
+                  <Button
+                    onClick={handleNuevoEscaneo}
+                    size="lg"
+                    className="w-full mt-8 bg-red-600 hover:bg-red-700 text-white text-lg py-6"
+                  >
+                    Continuar Escaneando
+                  </Button>
                 </div>
               </CardContent>
             </Card>

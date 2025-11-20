@@ -1,5 +1,5 @@
-import { supabase } from '@/lib/supabase'
-import type { Invitado, InvitadoConDetalles, Lote } from '@/types/database'
+import { supabase } from '../lib/supabase'
+import type { Invitado, InvitadoConDetalles, Lote } from '../types/database'
 
 export interface InvitadoConLote extends Invitado {
   lote: Lote | null

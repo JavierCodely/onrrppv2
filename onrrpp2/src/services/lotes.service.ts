@@ -1,5 +1,5 @@
-import { supabase } from '@/lib/supabase'
-import type { Lote, ComisionTipo } from '@/types/database'
+import { supabase } from '../lib/supabase'
+import type { Lote, ComisionTipo } from '../types/database'
 
 export interface CreateLoteDTO {
   nombre: string

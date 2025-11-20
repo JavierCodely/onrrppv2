@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase } from '../lib/supabase'
 
 const BUCKET_NAME = 'event-banners'
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB

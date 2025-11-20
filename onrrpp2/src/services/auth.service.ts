@@ -1,5 +1,5 @@
-import { supabase } from '@/lib/supabase'
-import type { AuthUser } from '@/types/database'
+import { supabase } from '../lib/supabase'
+import type { AuthUser } from '../types/database'
 
 // Función para traducir errores comunes al español
 const translateAuthError = (error: Error): string => {

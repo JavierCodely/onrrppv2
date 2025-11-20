@@ -1,5 +1,5 @@
-import { supabase } from '@/lib/supabase'
-import type { Venta, VentaConDetalles, MetodoPago, VentasRRPPStats } from '@/types/database'
+import { supabase } from '../lib/supabase'
+import type { Venta, VentaConDetalles, MetodoPago, VentasRRPPStats } from '../types/database'
 
 export interface CreateVentaInput {
   uuid_invitado: string

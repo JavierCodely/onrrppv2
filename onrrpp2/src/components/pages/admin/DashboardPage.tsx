@@ -24,7 +24,9 @@ import {
   type DashboardFilters,
   type DashboardStats,
   type HourlyIngresos,
-  type LocationStats
+  type LocationStats,
+  type RRPPStats,
+  type RRPPIngresoStats
 } from '@/services/analytics.service'
 import {
   BarChart,
@@ -48,6 +50,10 @@ export function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [hourlyData, setHourlyData] = useState<HourlyIngresos[]>([])
   const [locationData, setLocationData] = useState<LocationStats[]>([])
+  const [rrppData, setRRPPData] = useState<RRPPStats[]>([])
+  const [selectedRRPP, setSelectedRRPP] = useState<RRPPStats | null>(null)
+  const [rrppIngresoData, setRRPPIngresoData] = useState<RRPPIngresoStats[]>([])
+  const [selectedRRPPIngreso, setSelectedRRPPIngreso] = useState<RRPPIngresoStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Opciones para filtros
@@ -60,7 +66,10 @@ export function DashboardPage() {
   }, [])
 
   useEffect(() => {
-    loadDashboardData()
+    // Solo cargar datos si hay un evento seleccionado
+    if (filters.eventoId) {
+      loadDashboardData()
+    }
   }, [filters])
 
   // Realtime para actualizar dashboard cuando hay cambios en invitados
@@ -144,15 +153,19 @@ export function DashboardPage() {
     if (eventosRes.data) setEventos(eventosRes.data)
     if (rrppsRes.data) setRRPPs(rrppsRes.data)
     if (deptosRes.data) setDepartamentos(deptosRes.data)
+
+    setLoading(false) // Ya no cargamos datos automáticamente
   }
 
   const loadDashboardData = async () => {
     setLoading(true)
 
-    const [statsRes, hourlyRes, locationRes] = await Promise.all([
+    const [statsRes, hourlyRes, locationRes, rrppRes, rrppIngresoRes] = await Promise.all([
       analyticsService.getDashboardStats(filters),
       analyticsService.getHourlyIngresos(filters),
       analyticsService.getLocationStats(filters, 'localidad'), // Agrupado por localidad (ciudades)
+      analyticsService.getTopRRPPs(filters),
+      analyticsService.getTopRRPPsByIngreso(filters),
     ])
 
     if (statsRes.error) {
@@ -165,6 +178,8 @@ export function DashboardPage() {
 
     if (hourlyRes.data) setHourlyData(hourlyRes.data)
     if (locationRes.data) setLocationData(locationRes.data)
+    if (rrppRes.data) setRRPPData(rrppRes.data)
+    if (rrppIngresoRes.data) setRRPPIngresoData(rrppIngresoRes.data)
 
     setLoading(false)
   }
@@ -174,13 +189,16 @@ export function DashboardPage() {
   }
 
   const hasActiveFilters = Object.keys(filters).length > 0
+  const hasEventoSelected = !!filters.eventoId
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard Analytics</h1>
         <p className="text-muted-foreground">
-          Análisis completo de eventos e invitados
+          {hasEventoSelected
+            ? 'Análisis completo de eventos e invitados'
+            : 'Selecciona un evento para ver las estadísticas'}
         </p>
       </div>
 
@@ -328,7 +346,21 @@ export function DashboardPage() {
         </CardContent>
       </Card>
 
+      {/* Mensaje cuando no hay evento seleccionado */}
+      {!hasEventoSelected && (
+        <Card className="border-2 border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Selecciona un evento</h3>
+            <p className="text-muted-foreground text-center max-w-md">
+              Para ver las estadísticas y gráficos del dashboard, primero debes seleccionar un evento en el filtro de arriba.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* KPIs - Estadísticas generales */}
+      {hasEventoSelected && (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Total Invitados */}
         <Card>
@@ -382,8 +414,10 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* KPIs - Por género */}
+      {hasEventoSelected && (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Invitados Mujeres */}
         <Card>
@@ -447,8 +481,10 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Gráficos */}
+      {hasEventoSelected && (
       <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
         {/* Gráfico de ingresos por hora */}
         <Card>
@@ -520,8 +556,10 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Gráfico de distribución por género */}
+      {hasEventoSelected && (
       <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
         {/* Gráfico de torta - Distribución por género */}
         <Card>
@@ -638,6 +676,277 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      )}
+
+      {/* Gráfico Top 10 RRPPs */}
+      {hasEventoSelected && (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            <CardTitle>Top 10 RRPPs por Invitados</CardTitle>
+          </div>
+          <CardDescription>
+            Haz clic en una barra para ver el desglose por género
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="h-80 flex items-center justify-center text-muted-foreground">
+              Cargando datos...
+            </div>
+          ) : rrppData.length === 0 ? (
+            <div className="h-80 flex items-center justify-center text-muted-foreground">
+              No hay datos de RRPPs
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart
+                  data={rrppData}
+                  layout="vertical"
+                  onClick={(data) => {
+                    if (data && data.activePayload && data.activePayload.length > 0) {
+                      setSelectedRRPP(data.activePayload[0].payload)
+                    }
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis
+                    dataKey="nombre_rrpp"
+                    type="category"
+                    width={120}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload as RRPPStats
+                        return (
+                          <div className="bg-background border rounded-lg p-3 shadow-lg">
+                            <p className="font-semibold text-sm mb-2">{data.nombre_rrpp}</p>
+                            <p className="text-xs text-muted-foreground">Total: {data.total_invitados}</p>
+                            <p className="text-xs text-blue-600">Hombres: {data.total_hombres}</p>
+                            <p className="text-xs text-pink-600">Mujeres: {data.total_mujeres}</p>
+                          </div>
+                        )
+                      }
+                      return null
+                    }}
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="total_invitados"
+                    fill="#8b5cf6"
+                    name="Total Invitados"
+                    radius={[0, 8, 8, 0]}
+                    cursor="pointer"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+
+              {/* Desglose por género cuando se selecciona un RRPP */}
+              {selectedRRPP && (
+                <Card className="border-2 border-primary">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Desglose - {selectedRRPP.nombre_rrpp}</CardTitle>
+                    <CardDescription>
+                      Distribución de invitados por género
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center p-4 bg-muted rounded-lg">
+                        <Users className="h-8 w-8 mx-auto mb-2 text-purple-600" />
+                        <p className="text-2xl font-bold text-purple-600">
+                          {selectedRRPP.total_invitados}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">Total</p>
+                      </div>
+                      <div className="text-center p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                        <Users className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+                        <p className="text-2xl font-bold text-blue-600">
+                          {selectedRRPP.total_hombres}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">Hombres</p>
+                        <p className="text-xs text-blue-600 mt-1 font-medium">
+                          {selectedRRPP.total_invitados > 0
+                            ? `${((selectedRRPP.total_hombres / selectedRRPP.total_invitados) * 100).toFixed(1)}%`
+                            : '0%'}
+                        </p>
+                      </div>
+                      <div className="text-center p-4 bg-pink-50 dark:bg-pink-950 rounded-lg">
+                        <Users className="h-8 w-8 mx-auto mb-2 text-pink-600" />
+                        <p className="text-2xl font-bold text-pink-600">
+                          {selectedRRPP.total_mujeres}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">Mujeres</p>
+                        <p className="text-xs text-pink-600 mt-1 font-medium">
+                          {selectedRRPP.total_invitados > 0
+                            ? `${((selectedRRPP.total_mujeres / selectedRRPP.total_invitados) * 100).toFixed(1)}%`
+                            : '0%'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedRRPP(null)}
+                      className="w-full mt-4"
+                    >
+                      Cerrar desglose
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      )}
+
+      {/* Gráfico Top 10 RRPPs por Cantidad de Ingresados */}
+      {hasEventoSelected && (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <UserCheck className="h-5 w-5" />
+            <CardTitle>Top 10 RRPPs por Cantidad de Ingresados</CardTitle>
+          </div>
+          <CardDescription>
+            RRPPs con mayor cantidad de invitados que ingresaron. Haz clic en una barra para ver el desglose
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="h-80 flex items-center justify-center text-muted-foreground">
+              Cargando datos...
+            </div>
+          ) : rrppIngresoData.length === 0 ? (
+            <div className="h-80 flex items-center justify-center text-muted-foreground">
+              No hay datos de ingresados
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart
+                  data={rrppIngresoData}
+                  layout="vertical"
+                  onClick={(data) => {
+                    if (data && data.activePayload && data.activePayload.length > 0) {
+                      setSelectedRRPPIngreso(data.activePayload[0].payload)
+                    }
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis
+                    dataKey="nombre_rrpp"
+                    type="category"
+                    width={120}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload as RRPPIngresoStats
+                        return (
+                          <div className="bg-background border rounded-lg p-3 shadow-lg">
+                            <p className="font-semibold text-sm mb-2">{data.nombre_rrpp}</p>
+                            <p className="text-xs text-green-600">
+                              Ingresados: {data.total_ingresados}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Total invitados: {data.total_invitados}
+                            </p>
+                            <div className="mt-1 pt-1 border-t">
+                              <p className="text-xs text-blue-600">Hombres: {data.ingresados_hombres}</p>
+                              <p className="text-xs text-pink-600">Mujeres: {data.ingresados_mujeres}</p>
+                            </div>
+                          </div>
+                        )
+                      }
+                      return null
+                    }}
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="total_ingresados"
+                    fill="#10b981"
+                    name="Total Ingresados"
+                    radius={[0, 8, 8, 0]}
+                    cursor="pointer"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+
+              {/* Desglose detallado cuando se selecciona un RRPP */}
+              {selectedRRPPIngreso && (
+                <Card className="border-2 border-green-500">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Desglose - {selectedRRPPIngreso.nombre_rrpp}</CardTitle>
+                    <CardDescription>
+                      Detalle de invitados e ingresados por género
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* KPIs principales */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-4 bg-purple-50 dark:bg-purple-950 rounded-lg">
+                          <Users className="h-8 w-8 mx-auto mb-2 text-purple-600" />
+                          <p className="text-2xl font-bold text-purple-600">
+                            {selectedRRPPIngreso.total_invitados}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">Total Invitados</p>
+                        </div>
+                        <div className="text-center p-4 bg-green-50 dark:bg-green-950 rounded-lg">
+                          <UserCheck className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                          <p className="text-2xl font-bold text-green-600">
+                            {selectedRRPPIngreso.total_ingresados}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">Total Ingresados</p>
+                        </div>
+                      </div>
+
+                      {/* Desglose por género de ingresados */}
+                      <div className="pt-4 border-t">
+                        <p className="text-sm font-semibold mb-3">Ingresados por Género</p>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="text-center p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                            <UserCheck className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+                            <p className="text-2xl font-bold text-blue-600">
+                              {selectedRRPPIngreso.ingresados_hombres}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">Hombres Ingresados</p>
+                          </div>
+                          <div className="text-center p-4 bg-pink-50 dark:bg-pink-950 rounded-lg">
+                            <UserCheck className="h-8 w-8 mx-auto mb-2 text-pink-600" />
+                            <p className="text-2xl font-bold text-pink-600">
+                              {selectedRRPPIngreso.ingresados_mujeres}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">Mujeres Ingresadas</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedRRPPIngreso(null)}
+                      className="w-full mt-4"
+                    >
+                      Cerrar desglose
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      )}
     </div>
   )
 }
