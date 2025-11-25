@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth.store'
 import { Button } from '@/components/ui/button'
@@ -10,14 +10,28 @@ import { Spinner } from '@/components/ui/spinner'
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { signIn, loading } = useAuthStore()
+  const { user, signIn, loading, initialized, initialize, signOutReason, clearSignOutReason } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
 
+  // Redirigir al dashboard si ya está autenticado
+  useEffect(() => {
+    if (!initialized) {
+      initialize()
+    }
+  }, [initialized, initialize])
+
+  useEffect(() => {
+    if (user && initialized) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [user, initialized, navigate])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    clearSignOutReason()
 
     if (!email || !password) {
       setError('Por favor complete todos los campos')
@@ -33,6 +47,28 @@ export function LoginPage() {
     }
   }
 
+  const handleInputChange = () => {
+    // Limpiar el mensaje de signOutReason cuando el usuario empiece a escribir
+    if (signOutReason) {
+      clearSignOutReason()
+    }
+    if (error) {
+      setError(null)
+    }
+  }
+
+  // Mostrar spinner mientras se inicializa
+  if (!initialized || (user && initialized)) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+        <div className="text-center space-y-4">
+          <Spinner className="mx-auto h-8 w-8" />
+          <p className="text-muted-foreground">Cargando...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4">
       <Card className="w-full max-w-md">
@@ -43,6 +79,12 @@ export function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {signOutReason && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{signOutReason}</AlertDescription>
+            </Alert>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -51,7 +93,10 @@ export function LoginPage() {
                 type="email"
                 placeholder="tu@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  handleInputChange()
+                }}
                 disabled={loading}
                 required
               />
@@ -63,7 +108,10 @@ export function LoginPage() {
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  handleInputChange()
+                }}
                 disabled={loading}
                 required
               />

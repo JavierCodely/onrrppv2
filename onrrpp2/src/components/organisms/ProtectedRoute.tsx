@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth.store'
+import { useUserActivityCheck } from '@/hooks/useUserActivityCheck'
 import { Spinner } from '@/components/ui/spinner'
 
 interface ProtectedRouteProps {
@@ -11,6 +12,9 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, loading, initialized, initialize } = useAuthStore()
   const location = useLocation()
+
+  // Verificar cada 15 segundos si el usuario está activo
+  useUserActivityCheck()
 
   useEffect(() => {
     if (!initialized) {

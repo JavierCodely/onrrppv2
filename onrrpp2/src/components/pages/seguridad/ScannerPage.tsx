@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useAuthStore } from '@/stores/auth.store'
+import { authService } from '@/services/auth.service'
 import { invitadosService } from '@/services/invitados.service'
 import type { InvitadoConDetalles } from '@/types/database'
 import { Button } from '@/components/ui/button'
@@ -18,6 +20,7 @@ import { Html5Qrcode } from 'html5-qrcode'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export function ScannerPage() {
+  const { user, signOut } = useAuthStore()
   const [scanning, setScanning] = useState(false)
   const [scanner, setScanner] = useState<Html5Qrcode | null>(null)
   const [invitado, setInvitado] = useState<InvitadoConDetalles | null>(null)
@@ -121,6 +124,45 @@ export function ScannerPage() {
     // Marcar INMEDIATAMENTE como procesando
     isProcessingRef.current = true
     console.log('🔒 isProcessingRef = true')
+
+    // VERIFICAR SI EL USUARIO ESTÁ ACTIVO
+    if (user) {
+      const { isActive, error } = await authService.checkUserActive(user.id)
+
+      if (error) {
+        console.error('❌ Error al verificar estado del usuario:', error)
+        toast.error('Error al verificar estado del usuario', {
+          description: error.message,
+        })
+        isProcessingRef.current = false
+        return
+      }
+
+      if (!isActive) {
+        console.log('⛔ Usuario inactivo detectado')
+        toast.error('Usuario inactivo', {
+          description: 'Tu cuenta ha sido desactivada. Contacta con un administrador.',
+        })
+
+        // Detener el scanner si está activo
+        if (scanner) {
+          try {
+            const state = scanner.getState()
+            if (state === 2) {
+              await scanner.stop()
+            }
+          } catch (err) {
+            console.error('⚠️ Error al detener scanner:', err)
+          }
+          setScanning(false)
+          setScanner(null)
+        }
+
+        // Cerrar sesión con razón (sin recargar)
+        await signOut('Tu cuenta ha sido deshabilitada, contacta con un administrador')
+        return
+      }
+    }
 
     // PASO 1: Detener el scanner inmediatamente
     console.log('🛑 Deteniendo scanner AHORA...')

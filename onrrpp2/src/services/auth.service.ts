@@ -159,4 +159,21 @@ export const authService = {
       return { user: null, error: error as Error }
     }
   },
+
+  async checkUserActive(userId: string): Promise<{ isActive: boolean; error: Error | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('personal')
+        .select('activo')
+        .eq('id', userId)
+        .single()
+
+      if (error) throw error
+      if (!data) throw new Error('Usuario no encontrado')
+
+      return { isActive: data.activo, error: null }
+    } catch (error) {
+      return { isActive: false, error: error as Error }
+    }
+  },
 }

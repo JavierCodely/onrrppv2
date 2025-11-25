@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth.store'
+import { authService } from '@/services/auth.service'
 import { eventosService } from '@/services/eventos.service'
 import { invitadosService, type InvitadoConLote } from '@/services/invitados.service'
 import { lotesService } from '@/services/lotes.service'
@@ -382,6 +383,34 @@ export function InvitadosPage() {
     setLoading(false)
   }
 
+  const handleShowQR = async (invitado: InvitadoConLote) => {
+    if (!user) return
+
+    // Verificar si el usuario está activo antes de mostrar el QR
+    const { isActive, error } = await authService.checkUserActive(user.id)
+
+    if (error) {
+      toast.error('Error al verificar estado del usuario', {
+        description: error.message,
+      })
+      return
+    }
+
+    if (!isActive) {
+      toast.error('Usuario inactivo', {
+        description: 'Tu cuenta ha sido desactivada. Contacta con un administrador.',
+      })
+
+      // Cerrar sesión con razón (sin recargar)
+      await useAuthStore.getState().signOut('Tu cuenta ha sido deshabilitada, contacta con un administrador')
+      return
+    }
+
+    // Si el usuario está activo, mostrar el QR
+    setSelectedInvitado(invitado)
+    setQrDialogOpen(true)
+  }
+
   const handleOpenDialog = async (invitado?: InvitadoConLote, preselectedLoteId?: string) => {
     if (invitado) {
       setSelectedInvitado(invitado)
@@ -702,8 +731,7 @@ export function InvitadosPage() {
         if (data && invitados.length > 0) {
           const invitadoCreado = invitados.find(i => i.id === data.id)
           if (invitadoCreado) {
-            setSelectedInvitado(invitadoCreado)
-            setQrDialogOpen(true)
+            await handleShowQR(invitadoCreado)
           }
         }
       }
@@ -1022,10 +1050,7 @@ export function InvitadosPage() {
                                         <Button
                                           variant="ghost"
                                           size="sm"
-                                          onClick={() => {
-                                            setSelectedInvitado(invitado)
-                                            setQrDialogOpen(true)
-                                          }}
+                                          onClick={() => handleShowQR(invitado)}
                                         >
                                           <QrCode className="h-4 w-4" />
                                         </Button>
@@ -1095,10 +1120,7 @@ export function InvitadosPage() {
                                       <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => {
-                                          setSelectedInvitado(invitado)
-                                          setQrDialogOpen(true)
-                                        }}
+                                        onClick={() => handleShowQR(invitado)}
                                         className="flex-1"
                                       >
                                         <QrCode className="h-4 w-4 mr-2" />
