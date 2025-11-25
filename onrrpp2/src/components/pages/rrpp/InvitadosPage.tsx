@@ -1617,6 +1617,11 @@ export function InvitadosPage() {
                   </p>
                 </div>
 
+                {/* Mensaje de derecho de admisión */}
+                <p className="text-xs text-muted-foreground text-center">
+                  El club se reserva el derecho de admisión
+                </p>
+
                 {/* Botón cerrar */}
                 <Button
                   onClick={() => {
