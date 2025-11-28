@@ -26,7 +26,8 @@ import {
   type HourlyIngresos,
   type LocationStats,
   type RRPPStats,
-  type RRPPIngresoStats
+  type RRPPIngresoStats,
+  type RRPPLocalidadStats
 } from '@/services/analytics.service'
 import {
   BarChart,
@@ -50,6 +51,9 @@ export function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [hourlyData, setHourlyData] = useState<HourlyIngresos[]>([])
   const [locationData, setLocationData] = useState<LocationStats[]>([])
+  const [topLocalidadesInvitados, setTopLocalidadesInvitados] = useState<LocationStats[]>([])
+  const [selectedLocalidad, setSelectedLocalidad] = useState<LocationStats | null>(null)
+  const [rrppsByLocalidad, setRRPPsByLocalidad] = useState<RRPPLocalidadStats[]>([])
   const [rrppData, setRRPPData] = useState<RRPPStats[]>([])
   const [selectedRRPP, setSelectedRRPP] = useState<RRPPStats | null>(null)
   const [rrppIngresoData, setRRPPIngresoData] = useState<RRPPIngresoStats[]>([])
@@ -160,10 +164,11 @@ export function DashboardPage() {
   const loadDashboardData = async () => {
     setLoading(true)
 
-    const [statsRes, hourlyRes, locationRes, rrppRes, rrppIngresoRes] = await Promise.all([
+    const [statsRes, hourlyRes, locationRes, topLocalidadesRes, rrppRes, rrppIngresoRes] = await Promise.all([
       analyticsService.getDashboardStats(filters),
       analyticsService.getHourlyIngresos(filters),
       analyticsService.getLocationStats(filters, 'localidad'), // Agrupado por localidad (ciudades)
+      analyticsService.getTopLocalidadesInvitados(filters), // TOP 5 localidades por invitados
       analyticsService.getTopRRPPs(filters),
       analyticsService.getTopRRPPsByIngreso(filters),
     ])
@@ -178,6 +183,7 @@ export function DashboardPage() {
 
     if (hourlyRes.data) setHourlyData(hourlyRes.data)
     if (locationRes.data) setLocationData(locationRes.data)
+    if (topLocalidadesRes.data) setTopLocalidadesInvitados(topLocalidadesRes.data)
     if (rrppRes.data) setRRPPData(rrppRes.data)
     if (rrppIngresoRes.data) setRRPPIngresoData(rrppIngresoRes.data)
 
@@ -186,6 +192,16 @@ export function DashboardPage() {
 
   const clearFilters = () => {
     setFilters({})
+  }
+
+  const handleLocalidadClick = async (localidadData: LocationStats) => {
+    setSelectedLocalidad(localidadData)
+
+    // Cargar RRPPs de esta localidad
+    const result = await analyticsService.getRRPPsByLocalidad(localidadData.ubicacion, filters)
+    if (result.data) {
+      setRRPPsByLocalidad(result.data)
+    }
   }
 
   const hasActiveFilters = Object.keys(filters).length > 0
@@ -483,79 +499,297 @@ export function DashboardPage() {
       </div>
       )}
 
-      {/* Gráficos */}
+      {/* Promedio de Edad */}
       {hasEventoSelected && (
-      <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
-        {/* Gráfico de ingresos por hora */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              <CardTitle>Ingresos por Hora</CardTitle>
-            </div>
-            <CardDescription>
-              Distribución de ingresos a lo largo del día
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="h-80 flex items-center justify-center text-muted-foreground">
-                Cargando datos...
-              </div>
-            ) : hourlyData.length === 0 ? (
-              <div className="h-80 flex items-center justify-center text-muted-foreground">
-                No hay datos de ingresos
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={hourlyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="hora" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="cantidad" fill="#3b82f6" name="Ingresos" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Promedio de Edad</CardTitle>
+          <CardDescription>
+            Edad promedio de invitados e ingresados por género
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Primera fila: Promedio de TODOS los invitados */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Invitados Registrados</h3>
+              <div className="grid gap-4 md:grid-cols-3">
+                {/* Promedio Mujeres */}
+                <Card className="border-pink-200 bg-pink-50 dark:bg-pink-950">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Mujeres</CardTitle>
+                    <Users className="h-4 w-4 text-pink-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-pink-600">
+                      {loading ? '-' : stats?.promedio_edad_mujeres || 0} años
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Promedio de edad
+                    </p>
+                  </CardContent>
+                </Card>
 
-        {/* Gráfico de ingresos por ubicación */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              <CardTitle>Ingresos por Localidad</CardTitle>
+                {/* Promedio Hombres */}
+                <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Hombres</CardTitle>
+                    <Users className="h-4 w-4 text-blue-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {loading ? '-' : stats?.promedio_edad_hombres || 0} años
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Promedio de edad
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Promedio General */}
+                <Card className="border-purple-200 bg-purple-50 dark:bg-purple-950">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">General</CardTitle>
+                    <Users className="h-4 w-4 text-purple-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-purple-600">
+                      {loading ? '-' : stats?.promedio_edad_general || 0} años
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Promedio de edad
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-            <CardDescription>
-              Top 10 localidades (ciudades) con más ingresos
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="h-80 flex items-center justify-center text-muted-foreground">
-                Cargando datos...
+
+            {/* Segunda fila: Promedio de INGRESADOS */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Ingresados al Evento</h3>
+              <div className="grid gap-4 md:grid-cols-3">
+                {/* Promedio Mujeres Ingresadas */}
+                <Card className="border-pink-300 bg-pink-100 dark:bg-pink-900">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Mujeres</CardTitle>
+                    <UserCheck className="h-4 w-4 text-pink-700" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-pink-700">
+                      {loading ? '-' : stats?.promedio_edad_ingresados_mujeres || 0} años
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Promedio de edad
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Promedio Hombres Ingresados */}
+                <Card className="border-blue-300 bg-blue-100 dark:bg-blue-900">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Hombres</CardTitle>
+                    <UserCheck className="h-4 w-4 text-blue-700" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-blue-700">
+                      {loading ? '-' : stats?.promedio_edad_ingresados_hombres || 0} años
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Promedio de edad
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Promedio General Ingresados */}
+                <Card className="border-purple-300 bg-purple-100 dark:bg-purple-900">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">General</CardTitle>
+                    <UserCheck className="h-4 w-4 text-purple-700" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-purple-700">
+                      {loading ? '-' : stats?.promedio_edad_ingresados_general || 0} años
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Promedio de edad
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
-            ) : locationData.length === 0 ? (
-              <div className="h-80 flex items-center justify-center text-muted-foreground">
-                No hay datos de ubicación
-              </div>
-            ) : (
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      )}
+
+      {/* Gráfico de ingresos por hora */}
+      {hasEventoSelected && (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            <CardTitle>Ingresos por Hora</CardTitle>
+          </div>
+          <CardDescription>
+            Distribución de ingresos a lo largo del día
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="h-80 flex items-center justify-center text-muted-foreground">
+              Cargando datos...
+            </div>
+          ) : hourlyData.length === 0 ? (
+            <div className="h-80 flex items-center justify-center text-muted-foreground">
+              No hay datos de ingresos
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart data={hourlyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="hora" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="cantidad" fill="#3b82f6" name="Ingresos" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+      )}
+
+      {/* Gráfico TOP 5 Localidades de Invitados */}
+      {hasEventoSelected && (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            <CardTitle>TOP 5 Localidades - Invitados</CardTitle>
+          </div>
+          <CardDescription>
+            Haz clic en una barra para ver el desglose por RRPP
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="h-80 flex items-center justify-center text-muted-foreground">
+              Cargando datos...
+            </div>
+          ) : topLocalidadesInvitados.length === 0 ? (
+            <div className="h-80 flex items-center justify-center text-muted-foreground">
+              No hay datos de localidades
+            </div>
+          ) : (
+            <div className="space-y-4">
               <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={locationData} layout="vertical">
+                <BarChart
+                  data={topLocalidadesInvitados}
+                  layout="vertical"
+                  onClick={(data) => {
+                    if (data && data.activePayload && data.activePayload.length > 0) {
+                      handleLocalidadClick(data.activePayload[0].payload)
+                    }
+                  }}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
                   <YAxis dataKey="ubicacion" type="category" width={100} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="cantidad" fill="#10b981" name="Ingresos" />
+                  <Bar
+                    dataKey="cantidad"
+                    fill="#8b5cf6"
+                    name="Invitados"
+                    radius={[0, 8, 8, 0]}
+                    cursor="pointer"
+                  />
                 </BarChart>
               </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+
+              {/* Desglose por RRPP cuando se selecciona una localidad */}
+              {selectedLocalidad && rrppsByLocalidad.length > 0 && (
+                <Card className="border-2 border-purple-500">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">
+                      Desglose - {selectedLocalidad.ubicacion}
+                    </CardTitle>
+                    <CardDescription>
+                      RRPPs que invitaron personas de esta localidad ({selectedLocalidad.cantidad} total)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {rrppsByLocalidad.map((rrpp) => (
+                        <div
+                          key={rrpp.id_rrpp}
+                          className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-950 rounded-lg"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-purple-600" />
+                            <span className="font-medium text-sm">{rrpp.nombre_rrpp}</span>
+                          </div>
+                          <Badge variant="secondary" className="bg-purple-600 text-white">
+                            {rrpp.cantidad} {rrpp.cantidad === 1 ? 'invitado' : 'invitados'}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedLocalidad(null)
+                        setRRPPsByLocalidad([])
+                      }}
+                      className="w-full mt-4"
+                    >
+                      Cerrar desglose
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      )}
+
+      {/* Gráfico de Ingresos por Localidad */}
+      {hasEventoSelected && (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            <CardTitle>Ingresos por Localidad</CardTitle>
+          </div>
+          <CardDescription>
+            Top 10 localidades (ciudades) con más ingresos
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="h-80 flex items-center justify-center text-muted-foreground">
+              Cargando datos...
+            </div>
+          ) : locationData.length === 0 ? (
+            <div className="h-80 flex items-center justify-center text-muted-foreground">
+              No hay datos de ubicación
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart data={locationData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis dataKey="ubicacion" type="category" width={100} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="cantidad" fill="#10b981" name="Ingresos" radius={[0, 8, 8, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
       )}
 
       {/* Gráfico de distribución por género */}

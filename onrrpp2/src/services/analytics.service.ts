@@ -14,6 +14,12 @@ export interface DashboardStats {
   total_ingresados_mujeres: number
   total_invitados_hombres: number
   total_ingresados_hombres: number
+  promedio_edad_general: number
+  promedio_edad_mujeres: number
+  promedio_edad_hombres: number
+  promedio_edad_ingresados_general: number
+  promedio_edad_ingresados_mujeres: number
+  promedio_edad_ingresados_hombres: number
 }
 
 export interface HourlyIngresos {
@@ -44,6 +50,12 @@ export interface RRPPIngresoStats {
   tasa_ingreso: number
 }
 
+export interface RRPPLocalidadStats {
+  id_rrpp: string
+  nombre_rrpp: string
+  cantidad: number
+}
+
 class AnalyticsService {
   /**
    * Obtener estadísticas generales con filtros
@@ -55,7 +67,7 @@ class AnalyticsService {
     try {
       let query = supabase
         .from('invitados')
-        .select('sexo, ingresado')
+        .select('sexo, ingresado, edad')
 
       // Aplicar filtros
       if (filters.eventoId) {
@@ -75,6 +87,25 @@ class AnalyticsService {
 
       if (error) throw error
 
+      // Filtrar invitados con edad
+      const invitadosConEdad = data?.filter(i => i.edad != null && i.edad > 0) || []
+      const ingresadosConEdad = invitadosConEdad.filter(i => i.ingresado)
+
+      // Calcular promedios de edad - TODOS los invitados
+      const edadesMujeres = invitadosConEdad.filter(i => i.sexo === 'mujer').map(i => i.edad!)
+      const edadesHombres = invitadosConEdad.filter(i => i.sexo === 'hombre').map(i => i.edad!)
+      const edadesTodas = invitadosConEdad.map(i => i.edad!)
+
+      // Calcular promedios de edad - INGRESADOS
+      const edadesMujeresIngresadas = ingresadosConEdad.filter(i => i.sexo === 'mujer').map(i => i.edad!)
+      const edadesHombresIngresados = ingresadosConEdad.filter(i => i.sexo === 'hombre').map(i => i.edad!)
+      const edadesIngresadasTodas = ingresadosConEdad.map(i => i.edad!)
+
+      const calcularPromedio = (edades: number[]) => {
+        if (edades.length === 0) return 0
+        return Math.round(edades.reduce((sum, edad) => sum + edad, 0) / edades.length)
+      }
+
       // Calcular estadísticas
       const stats: DashboardStats = {
         total_invitados: data?.length || 0,
@@ -83,6 +114,12 @@ class AnalyticsService {
         total_ingresados_mujeres: data?.filter(i => i.sexo === 'mujer' && i.ingresado).length || 0,
         total_invitados_hombres: data?.filter(i => i.sexo === 'hombre').length || 0,
         total_ingresados_hombres: data?.filter(i => i.sexo === 'hombre' && i.ingresado).length || 0,
+        promedio_edad_general: calcularPromedio(edadesTodas),
+        promedio_edad_mujeres: calcularPromedio(edadesMujeres),
+        promedio_edad_hombres: calcularPromedio(edadesHombres),
+        promedio_edad_ingresados_general: calcularPromedio(edadesIngresadasTodas),
+        promedio_edad_ingresados_mujeres: calcularPromedio(edadesMujeresIngresadas),
+        promedio_edad_ingresados_hombres: calcularPromedio(edadesHombresIngresados),
       }
 
       return { data: stats, error: null }
@@ -208,6 +245,60 @@ class AnalyticsService {
       return { data: locationData, error: null }
     } catch (error) {
       console.error('Error fetching location stats:', error)
+      return { data: null, error: error as Error }
+    }
+  }
+
+  /**
+   * Obtener TOP 5 localidades por invitados totales (no solo ingresados)
+   */
+  async getTopLocalidadesInvitados(filters: DashboardFilters = {}): Promise<{
+    data: LocationStats[] | null
+    error: Error | null
+  }> {
+    try {
+      let query = supabase
+        .from('invitados')
+        .select('localidad')
+        .not('localidad', 'is', null)
+
+      // Aplicar filtros
+      if (filters.eventoId) {
+        query = query.eq('uuid_evento', filters.eventoId)
+      }
+      if (filters.rrppId) {
+        query = query.eq('id_rrpp', filters.rrppId)
+      }
+      if (filters.sexo) {
+        query = query.eq('sexo', filters.sexo)
+      }
+      if (filters.departamento) {
+        query = query.eq('departamento', filters.departamento)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      // Agrupar por localidad
+      const locationMap = new Map<string, number>()
+
+      data?.forEach((invitado: any) => {
+        const location = invitado.localidad
+        if (location) {
+          locationMap.set(location, (locationMap.get(location) || 0) + 1)
+        }
+      })
+
+      // Convertir a array y ordenar por cantidad descendente
+      const locationData: LocationStats[] = Array.from(locationMap.entries())
+        .map(([ubicacion, cantidad]) => ({ ubicacion, cantidad }))
+        .sort((a, b) => b.cantidad - a.cantidad)
+        .slice(0, 5) // Top 5 localidades
+
+      return { data: locationData, error: null }
+    } catch (error) {
+      console.error('Error fetching top localidades invitados:', error)
       return { data: null, error: error as Error }
     }
   }
@@ -456,6 +547,73 @@ class AnalyticsService {
       return { data: rrppIngresoStats, error: null }
     } catch (error) {
       console.error('Error fetching top RRPPs by ingreso:', error)
+      return { data: null, error: error as Error }
+    }
+  }
+
+  /**
+   * Obtener RRPPs con invitados de una localidad específica
+   */
+  async getRRPPsByLocalidad(localidad: string, filters: DashboardFilters = {}): Promise<{
+    data: RRPPLocalidadStats[] | null
+    error: Error | null
+  }> {
+    try {
+      let query = supabase
+        .from('invitados')
+        .select(`
+          id_rrpp,
+          personal!inner(nombre, apellido)
+        `)
+        .eq('localidad', localidad)
+
+      // Aplicar filtros
+      if (filters.eventoId) {
+        query = query.eq('uuid_evento', filters.eventoId)
+      }
+      if (filters.rrppId) {
+        query = query.eq('id_rrpp', filters.rrppId)
+      }
+      if (filters.sexo) {
+        query = query.eq('sexo', filters.sexo)
+      }
+      if (filters.departamento) {
+        query = query.eq('departamento', filters.departamento)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      // Agrupar por RRPP
+      const rrppMap = new Map<string, { nombre: string; apellido: string; cantidad: number }>()
+
+      data?.forEach((invitado: any) => {
+        const rrppId = invitado.id_rrpp
+        const nombre = invitado.personal?.nombre || 'Sin nombre'
+        const apellido = invitado.personal?.apellido || ''
+
+        if (!rrppMap.has(rrppId)) {
+          rrppMap.set(rrppId, { nombre, apellido, cantidad: 0 })
+        }
+
+        const rrppData = rrppMap.get(rrppId)!
+        rrppData.cantidad++
+      })
+
+      // Convertir a array y ordenar por cantidad descendente
+      const rrppStats: RRPPLocalidadStats[] = Array.from(rrppMap.entries())
+        .map(([id_rrpp, data]) => ({
+          id_rrpp,
+          nombre_rrpp: `${data.nombre} ${data.apellido}`.trim(),
+          cantidad: data.cantidad,
+        }))
+        .filter(rrpp => rrpp.cantidad > 0) // Solo RRPPs con invitados de esta localidad
+        .sort((a, b) => b.cantidad - a.cantidad) // Ordenar por cantidad descendente
+
+      return { data: rrppStats, error: null }
+    } catch (error) {
+      console.error('Error fetching RRPPs by localidad:', error)
       return { data: null, error: error as Error }
     }
   }
