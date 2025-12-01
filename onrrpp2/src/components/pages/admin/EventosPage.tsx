@@ -56,9 +56,18 @@ import {
   Crown,
   Ticket,
   DollarSign,
+  Shield,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import type { GrupoType } from '@/types/database'
 
 export function EventosPage() {
   const { user } = useAuthStore()
@@ -86,6 +95,7 @@ export function EventosPage() {
     cantidad_maxima: '',
     precio: '',
     es_vip: false,
+    grupo: '' as GrupoType | '' | 'TODOS',
     comision_tipo: 'monto' as 'monto' | 'porcentaje',
     comision_rrpp_monto: '',
     comision_rrpp_porcentaje: '',
@@ -382,6 +392,7 @@ export function EventosPage() {
         cantidad_maxima: lote.cantidad_maxima.toString(),
         precio: lote.precio.toString(),
         es_vip: lote.es_vip,
+        grupo: lote.grupo || 'TODOS',
         comision_tipo: lote.comision_tipo,
         comision_rrpp_monto: lote.comision_rrpp_monto.toString(),
         comision_rrpp_porcentaje: lote.comision_rrpp_porcentaje.toString(),
@@ -393,6 +404,7 @@ export function EventosPage() {
         cantidad_maxima: '',
         precio: '',
         es_vip: false,
+        grupo: '',
         comision_tipo: 'monto',
         comision_rrpp_monto: '',
         comision_rrpp_porcentaje: '',
@@ -409,6 +421,7 @@ export function EventosPage() {
       cantidad_maxima: '',
       precio: '',
       es_vip: false,
+      grupo: '',
       comision_tipo: 'monto',
       comision_rrpp_monto: '',
       comision_rrpp_porcentaje: '',
@@ -448,6 +461,11 @@ export function EventosPage() {
       }
     }
 
+    // Convertir grupo: 'TODOS' o '' a null, sino usar el valor
+    const grupoValue = (loteFormData.grupo === 'TODOS' || !loteFormData.grupo)
+      ? null
+      : (loteFormData.grupo as GrupoType)
+
     try {
       if (selectedLote) {
         // Actualizar lote existente
@@ -456,6 +474,7 @@ export function EventosPage() {
           cantidad_maxima: cantidadMaxima,
           precio: precio,
           es_vip: loteFormData.es_vip,
+          grupo: grupoValue,
           comision_tipo: loteFormData.comision_tipo,
           comision_rrpp_monto: comisionMonto,
           comision_rrpp_porcentaje: comisionPorcentaje,
@@ -470,6 +489,7 @@ export function EventosPage() {
           cantidad_maxima: cantidadMaxima,
           precio: precio,
           es_vip: loteFormData.es_vip,
+          grupo: grupoValue,
           comision_tipo: loteFormData.comision_tipo,
           comision_rrpp_monto: comisionMonto,
           comision_rrpp_porcentaje: comisionPorcentaje,
@@ -939,12 +959,28 @@ export function EventosPage() {
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 space-y-2">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <h4 className="font-semibold text-lg">{lote.nombre}</h4>
                               {lote.es_vip && (
                                 <Badge className="bg-yellow-500 gap-1">
                                   <Crown className="h-3 w-3" />
                                   VIP
+                                </Badge>
+                              )}
+                              {lote.grupo ? (
+                                <Badge className={`gap-1 ${
+                                  lote.grupo === 'A' ? 'bg-purple-500 text-white' :
+                                  lote.grupo === 'B' ? 'bg-cyan-500 text-white' :
+                                  lote.grupo === 'C' ? 'bg-orange-500 text-white' :
+                                  'bg-pink-500 text-white'
+                                }`}>
+                                  <Shield className="h-3 w-3" />
+                                  Grupo {lote.grupo}
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="gap-1">
+                                  <Shield className="h-3 w-3" />
+                                  Todos
                                 </Badge>
                               )}
                               {!lote.activo && (
@@ -1107,6 +1143,32 @@ export function EventosPage() {
                   <Crown className="h-4 w-4 text-yellow-500" />
                   Es VIP (permite múltiples escaneos)
                 </label>
+              </div>
+
+              {/* Selector de Grupo */}
+              <div className="space-y-2">
+                <Label htmlFor="lote-grupo">Grupo</Label>
+                <Select
+                  value={loteFormData.grupo || 'TODOS'}
+                  onValueChange={(value) =>
+                    setLoteFormData({ ...loteFormData, grupo: value as GrupoType | 'TODOS' })
+                  }
+                >
+                  <SelectTrigger id="lote-grupo">
+                    <Shield className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Selecciona un grupo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TODOS">Todos los grupos (visible para todos)</SelectItem>
+                    <SelectItem value="A">Grupo A</SelectItem>
+                    <SelectItem value="B">Grupo B</SelectItem>
+                    <SelectItem value="C">Grupo C</SelectItem>
+                    <SelectItem value="D">Grupo D</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Si seleccionas un grupo específico, solo los RRPPs de ese grupo podrán ver y vender este lote
+                </p>
               </div>
 
               {/* Sección de comisión RRPP */}

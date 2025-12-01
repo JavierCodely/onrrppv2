@@ -167,7 +167,7 @@ export function EventosRRPPPage() {
             >
               {/* Banner */}
               {evento.evento_banner_url ? (
-                <div className="w-full aspect-[2/1] bg-slate-100 dark:bg-slate-800">
+                <div className="w-full h-48 bg-slate-100 dark:bg-slate-800 overflow-hidden">
                   <img
                     src={evento.evento_banner_url}
                     alt={evento.evento_nombre}
@@ -175,7 +175,7 @@ export function EventosRRPPPage() {
                   />
                 </div>
               ) : (
-                <div className="w-full aspect-[2/1] bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <div className="w-full h-48 bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                   <Calendar className="h-12 w-12 text-muted-foreground opacity-30" />
                 </div>
               )}

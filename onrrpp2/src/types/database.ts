@@ -1,6 +1,7 @@
 export type UserRole = 'admin' | 'rrpp' | 'seguridad'
 export type MetodoPago = 'efectivo' | 'transferencia' | 'mixto'
 export type ComisionTipo = 'monto' | 'porcentaje'
+export type GrupoType = 'A' | 'B' | 'C' | 'D'
 
 export interface Personal {
   id: string
@@ -10,6 +11,8 @@ export interface Personal {
   sexo: 'hombre' | 'mujer'
   ubicacion: string | null
   rol: UserRole
+  grupo: GrupoType | null
+  fecha_nacimiento: string | null
   uuid_club: string
   activo: boolean
   created_at: string
@@ -45,6 +48,7 @@ export interface Lote {
   cantidad_actual: number
   precio: number
   es_vip: boolean
+  grupo: GrupoType | null
   comision_tipo: ComisionTipo
   comision_rrpp_monto: number
   comision_rrpp_porcentaje: number
