@@ -47,13 +47,15 @@ import { supabase } from '@/lib/supabase'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
 export function DashboardPage() {
-  const [filters, setFilters] = useState<DashboardFilters>({})
+  const [filters, setFilters] = useState<DashboardFilters & { eventoId?: string | 'ALL' }>({})
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [hourlyData, setHourlyData] = useState<HourlyIngresos[]>([])
   const [locationData, setLocationData] = useState<LocationStats[]>([])
   const [topLocalidadesInvitados, setTopLocalidadesInvitados] = useState<LocationStats[]>([])
   const [selectedLocalidad, setSelectedLocalidad] = useState<LocationStats | null>(null)
   const [rrppsByLocalidad, setRRPPsByLocalidad] = useState<RRPPLocalidadStats[]>([])
+  const [selectedLocalidadIngreso, setSelectedLocalidadIngreso] = useState<LocationStats | null>(null)
+  const [rrppsByLocalidadIngreso, setRRPPsByLocalidadIngreso] = useState<RRPPLocalidadStats[]>([])
   const [rrppData, setRRPPData] = useState<RRPPStats[]>([])
   const [selectedRRPP, setSelectedRRPP] = useState<RRPPStats | null>(null)
   const [rrppIngresoData, setRRPPIngresoData] = useState<RRPPIngresoStats[]>([])
@@ -70,7 +72,7 @@ export function DashboardPage() {
   }, [])
 
   useEffect(() => {
-    // Solo cargar datos si hay un evento seleccionado
+    // Solo cargar datos si hay un evento seleccionado (específico o ALL)
     if (filters.eventoId) {
       loadDashboardData()
     }
@@ -98,7 +100,7 @@ export function DashboardPage() {
 
           if (invitadoAfectado) {
             // Si hay filtros activos, verificar si el cambio los afecta
-            if (filters.eventoId && invitadoAfectado.uuid_evento !== filters.eventoId) {
+            if (filters.eventoId && filters.eventoId !== 'ALL' && invitadoAfectado.uuid_evento !== filters.eventoId) {
               shouldUpdate = false
             }
             if (filters.rrppId && invitadoAfectado.id_rrpp !== filters.rrppId) {
@@ -164,13 +166,19 @@ export function DashboardPage() {
   const loadDashboardData = async () => {
     setLoading(true)
 
+    // Convertir 'ALL' a undefined para el servicio (todos los eventos)
+    const serviceFilters: DashboardFilters = {
+      ...filters,
+      eventoId: filters.eventoId === 'ALL' ? undefined : filters.eventoId
+    }
+
     const [statsRes, hourlyRes, locationRes, topLocalidadesRes, rrppRes, rrppIngresoRes] = await Promise.all([
-      analyticsService.getDashboardStats(filters),
-      analyticsService.getHourlyIngresos(filters),
-      analyticsService.getLocationStats(filters, 'localidad'), // Agrupado por localidad (ciudades)
-      analyticsService.getTopLocalidadesInvitados(filters), // TOP 5 localidades por invitados
-      analyticsService.getTopRRPPs(filters),
-      analyticsService.getTopRRPPsByIngreso(filters),
+      analyticsService.getDashboardStats(serviceFilters),
+      analyticsService.getHourlyIngresos(serviceFilters),
+      analyticsService.getLocationStats(serviceFilters, 'localidad'), // Agrupado por localidad (ciudades)
+      analyticsService.getTopLocalidadesInvitados(serviceFilters), // TOP 5 localidades por invitados
+      analyticsService.getTopRRPPs(serviceFilters),
+      analyticsService.getTopRRPPsByIngreso(serviceFilters),
     ])
 
     if (statsRes.error) {
@@ -197,10 +205,32 @@ export function DashboardPage() {
   const handleLocalidadClick = async (localidadData: LocationStats) => {
     setSelectedLocalidad(localidadData)
 
+    // Convertir 'ALL' a undefined para el servicio
+    const serviceFilters: DashboardFilters = {
+      ...filters,
+      eventoId: filters.eventoId === 'ALL' ? undefined : filters.eventoId
+    }
+
     // Cargar RRPPs de esta localidad
-    const result = await analyticsService.getRRPPsByLocalidad(localidadData.ubicacion, filters)
+    const result = await analyticsService.getRRPPsByLocalidad(localidadData.ubicacion, serviceFilters)
     if (result.data) {
       setRRPPsByLocalidad(result.data)
+    }
+  }
+
+  const handleLocalidadIngresoClick = async (localidadData: LocationStats) => {
+    setSelectedLocalidadIngreso(localidadData)
+
+    // Convertir 'ALL' a undefined para el servicio
+    const serviceFilters: DashboardFilters = {
+      ...filters,
+      eventoId: filters.eventoId === 'ALL' ? undefined : filters.eventoId
+    }
+
+    // Cargar RRPPs con ingresados de esta localidad
+    const result = await analyticsService.getRRPPsByLocalidadIngresados(localidadData.ubicacion, serviceFilters)
+    if (result.data) {
+      setRRPPsByLocalidadIngreso(result.data)
     }
   }
 
@@ -242,14 +272,14 @@ export function DashboardPage() {
             <div className="space-y-2">
               <Label>Evento</Label>
               <Select
-                value={filters.eventoId || 'ALL'}
+                value={filters.eventoId || ''}
                 onValueChange={(value) =>
-                  setFilters({ ...filters, eventoId: value === 'ALL' ? undefined : value })
+                  setFilters({ ...filters, eventoId: value || undefined })
                 }
               >
                 <SelectTrigger>
                   <Calendar className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Todos los eventos" />
+                  <SelectValue placeholder="Selecciona un evento" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">Todos los eventos</SelectItem>
@@ -339,7 +369,7 @@ export function DashboardPage() {
             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
               {filters.eventoId && (
                 <Badge variant="secondary">
-                  Evento: {eventos.find(e => e.id === filters.eventoId)?.nombre}
+                  Evento: {filters.eventoId === 'ALL' ? 'Todos los eventos' : eventos.find(e => e.id === filters.eventoId)?.nombre}
                 </Badge>
               )}
               {filters.rrppId && (
@@ -764,7 +794,7 @@ export function DashboardPage() {
             <CardTitle>Ingresos por Localidad</CardTitle>
           </div>
           <CardDescription>
-            Top 10 localidades (ciudades) con más ingresos
+            Top 10 localidades (ciudades) con más ingresos. Haz clic en una barra para ver el desglose por RRPP
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -777,16 +807,75 @@ export function DashboardPage() {
               No hay datos de ubicación
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={locationData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="ubicacion" type="category" width={100} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="cantidad" fill="#10b981" name="Ingresos" radius={[0, 8, 8, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="space-y-4">
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart
+                  data={locationData}
+                  layout="vertical"
+                  onClick={(data) => {
+                    if (data && data.activePayload && data.activePayload.length > 0) {
+                      handleLocalidadIngresoClick(data.activePayload[0].payload)
+                    }
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="ubicacion" type="category" width={100} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar
+                    dataKey="cantidad"
+                    fill="#10b981"
+                    name="Ingresos"
+                    radius={[0, 8, 8, 0]}
+                    cursor="pointer"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+
+              {/* Desglose por RRPP cuando se selecciona una localidad */}
+              {selectedLocalidadIngreso && rrppsByLocalidadIngreso.length > 0 && (
+                <Card className="border-2 border-green-500">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">
+                      Desglose - {selectedLocalidadIngreso.ubicacion}
+                    </CardTitle>
+                    <CardDescription>
+                      RRPPs que hicieron ingresar personas de esta localidad ({selectedLocalidadIngreso.cantidad} total)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {rrppsByLocalidadIngreso.map((rrpp) => (
+                        <div
+                          key={rrpp.id_rrpp}
+                          className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950 rounded-lg"
+                        >
+                          <div className="flex items-center gap-2">
+                            <UserCheck className="h-4 w-4 text-green-600" />
+                            <span className="font-medium text-sm">{rrpp.nombre_rrpp}</span>
+                          </div>
+                          <Badge variant="secondary" className="bg-green-600 text-white">
+                            {rrpp.cantidad} {rrpp.cantidad === 1 ? 'ingresado' : 'ingresados'}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedLocalidadIngreso(null)
+                        setRRPPsByLocalidadIngreso([])
+                      }}
+                      className="w-full mt-4"
+                    >
+                      Cerrar desglose
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

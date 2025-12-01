@@ -67,7 +67,8 @@ class AnalyticsService {
     try {
       let query = supabase
         .from('invitados')
-        .select('sexo, ingresado, edad')
+        .select('sexo, ingresado, edad, personal!inner(activo)')
+        .eq('personal.activo', true) // Solo invitados de RRPPs activos
 
       // Aplicar filtros
       if (filters.eventoId) {
@@ -139,9 +140,10 @@ class AnalyticsService {
     try {
       let query = supabase
         .from('invitados')
-        .select('fecha_ingreso')
+        .select('fecha_ingreso, personal!inner(activo)')
         .eq('ingresado', true)
         .not('fecha_ingreso', 'is', null)
+        .eq('personal.activo', true) // Solo invitados de RRPPs activos
 
       // Aplicar filtros
       if (filters.eventoId) {
@@ -195,9 +197,10 @@ class AnalyticsService {
       // Seleccionar todos los campos necesarios
       let query = supabase
         .from('invitados')
-        .select('departamento, localidad, ingresado, uuid_evento, id_rrpp, sexo')
+        .select('departamento, localidad, ingresado, uuid_evento, id_rrpp, sexo, personal!inner(activo)')
         .eq('ingresado', true)
         .not(groupBy, 'is', null)
+        .eq('personal.activo', true) // Solo invitados de RRPPs activos
 
       // Aplicar filtros
       if (filters.eventoId) {
@@ -259,8 +262,9 @@ class AnalyticsService {
     try {
       let query = supabase
         .from('invitados')
-        .select('localidad')
+        .select('localidad, personal!inner(activo)')
         .not('localidad', 'is', null)
+        .eq('personal.activo', true) // Solo invitados de RRPPs activos
 
       // Aplicar filtros
       if (filters.eventoId) {
@@ -394,8 +398,9 @@ class AnalyticsService {
         .select(`
           id_rrpp,
           sexo,
-          personal!inner(nombre, apellido)
+          personal!inner(nombre, apellido, activo)
         `)
+        .eq('personal.activo', true) // Solo RRPPs activos
 
       // Aplicar filtros
       if (filters.eventoId) {
@@ -468,8 +473,9 @@ class AnalyticsService {
           id_rrpp,
           sexo,
           ingresado,
-          personal!inner(nombre, apellido)
+          personal!inner(nombre, apellido, activo)
         `)
+        .eq('personal.activo', true) // Solo RRPPs activos
 
       // Aplicar filtros
       if (filters.eventoId) {
@@ -563,9 +569,10 @@ class AnalyticsService {
         .from('invitados')
         .select(`
           id_rrpp,
-          personal!inner(nombre, apellido)
+          personal!inner(nombre, apellido, activo)
         `)
         .eq('localidad', localidad)
+        .eq('personal.activo', true) // Solo RRPPs activos
 
       // Aplicar filtros
       if (filters.eventoId) {
@@ -614,6 +621,75 @@ class AnalyticsService {
       return { data: rrppStats, error: null }
     } catch (error) {
       console.error('Error fetching RRPPs by localidad:', error)
+      return { data: null, error: error as Error }
+    }
+  }
+
+  /**
+   * Obtener RRPPs con ingresados de una localidad específica
+   */
+  async getRRPPsByLocalidadIngresados(localidad: string, filters: DashboardFilters = {}): Promise<{
+    data: RRPPLocalidadStats[] | null
+    error: Error | null
+  }> {
+    try {
+      let query = supabase
+        .from('invitados')
+        .select(`
+          id_rrpp,
+          personal!inner(nombre, apellido, activo)
+        `)
+        .eq('localidad', localidad)
+        .eq('ingresado', true) // Solo ingresados
+        .eq('personal.activo', true) // Solo RRPPs activos
+
+      // Aplicar filtros
+      if (filters.eventoId) {
+        query = query.eq('uuid_evento', filters.eventoId)
+      }
+      if (filters.rrppId) {
+        query = query.eq('id_rrpp', filters.rrppId)
+      }
+      if (filters.sexo) {
+        query = query.eq('sexo', filters.sexo)
+      }
+      if (filters.departamento) {
+        query = query.eq('departamento', filters.departamento)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      // Agrupar por RRPP
+      const rrppMap = new Map<string, { nombre: string; apellido: string; cantidad: number }>()
+
+      data?.forEach((invitado: any) => {
+        const rrppId = invitado.id_rrpp
+        const nombre = invitado.personal?.nombre || 'Sin nombre'
+        const apellido = invitado.personal?.apellido || ''
+
+        if (!rrppMap.has(rrppId)) {
+          rrppMap.set(rrppId, { nombre, apellido, cantidad: 0 })
+        }
+
+        const rrppData = rrppMap.get(rrppId)!
+        rrppData.cantidad++
+      })
+
+      // Convertir a array y ordenar por cantidad descendente
+      const rrppStats: RRPPLocalidadStats[] = Array.from(rrppMap.entries())
+        .map(([id_rrpp, data]) => ({
+          id_rrpp,
+          nombre_rrpp: `${data.nombre} ${data.apellido}`.trim(),
+          cantidad: data.cantidad,
+        }))
+        .filter(rrpp => rrpp.cantidad > 0) // Solo RRPPs con ingresados de esta localidad
+        .sort((a, b) => b.cantidad - a.cantidad) // Ordenar por cantidad descendente
+
+      return { data: rrppStats, error: null }
+    } catch (error) {
+      console.error('Error fetching RRPPs by localidad ingresados:', error)
       return { data: null, error: error as Error }
     }
   }
