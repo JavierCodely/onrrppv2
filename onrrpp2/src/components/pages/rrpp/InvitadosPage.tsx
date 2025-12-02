@@ -1595,12 +1595,17 @@ export function InvitadosPage() {
                   </div>
                 )}
 
+                {/* Mensaje de derecho de admisión */}
+                <p className="text-xs text-muted-foreground text-center">
+                  El club se reserva el derecho de admisión
+                </p>
+
                 {/* QR Code */}
-                <div className="flex justify-center p-6 bg-white rounded-lg">
+                <div className="flex justify-center p-4 bg-white rounded-lg">
                   <QRCodeSVG
                     id={`qr-${selectedInvitado.id}`}
                     value={selectedInvitado.qr_code}
-                    size={256}
+                    size={240}
                     level="H"
                     includeMargin={true}
                   />
@@ -1617,21 +1622,29 @@ export function InvitadosPage() {
                   </p>
                 </div>
 
-                {/* Mensaje de derecho de admisión */}
-                <p className="text-xs text-muted-foreground text-center">
-                  El club se reserva el derecho de admisión
-                </p>
-
-                {/* Botón cerrar */}
-                <Button
-                  onClick={() => {
-                    setQrDialogOpen(false)
-                    setSelectedInvitado(null)
-                  }}
-                  className="w-full"
-                >
-                  Cerrar
-                </Button>
+                {/* Botón cerrar con logos */}
+                <div className="flex items-center justify-between gap-2">
+                  <img
+                    src="/sponsor/heineken.webp"
+                    alt="Heineken"
+                    className="h-28 w-auto object-contain"
+                  />
+                  <Button
+                    onClick={() => {
+                      setQrDialogOpen(false)
+                      setSelectedInvitado(null)
+                    }}
+                    size="default"
+                    className="flex-shrink-0 px-8"
+                  >
+                    Cerrar
+                  </Button>
+                  <img
+                    src="/sponsor/speed.webp"
+                    alt="Speed"
+                    className="h-28 w-auto object-contain"
+                  />
+                </div>
               </div>
             )}
 
