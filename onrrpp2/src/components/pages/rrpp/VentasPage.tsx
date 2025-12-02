@@ -146,6 +146,60 @@ export function VentasPage() {
 
       {selectedEvento && stats && (
         <>
+          {/* Tarjetas de totales monetarios */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Efectivo
+                </CardTitle>
+                <div className="h-4 w-4 rounded-full bg-green-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold text-green-600 dark:text-green-400">
+                  ${stats.monto_total_efectivo.toFixed(2)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Cobrado en efectivo
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Transferencia
+                </CardTitle>
+                <div className="h-4 w-4 rounded-full bg-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                  ${stats.monto_total_transferencia.toFixed(2)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Cobrado por transferencia
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total a Adeudar
+                </CardTitle>
+                <div className="h-4 w-4 rounded-full bg-red-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold text-red-600 dark:text-red-400">
+                  ${stats.monto_total_general.toFixed(2)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Total cobrado (efectivo + transferencia)
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Tarjetas de comisiones */}
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
@@ -287,14 +341,18 @@ export function VentasPage() {
                           <TableHead>Invitado</TableHead>
                           <TableHead>Evento / Lote</TableHead>
                           <TableHead>Método de Pago</TableHead>
-                          <TableHead className="text-right">Efectivo</TableHead>
-                          <TableHead className="text-right">Transferencia</TableHead>
-                          <TableHead className="text-right">Total</TableHead>
+                          <TableHead className="text-right text-xs">Efectivo</TableHead>
+                          <TableHead className="text-right text-xs">Transferencia</TableHead>
+                          <TableHead className="text-right text-xs">Total</TableHead>
                           <TableHead>Fecha</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {ventas.map((venta) => (
+                        {ventas.map((venta) => {
+                          if (!venta.invitado || !venta.evento || !venta.lote) {
+                            return null // Skip ventas con datos incompletos
+                          }
+                          return (
                           <TableRow key={venta.id}>
                             <TableCell className="font-medium">
                               <div>{venta.invitado.nombre} {venta.invitado.apellido}</div>
@@ -322,7 +380,7 @@ export function VentasPage() {
                                 {venta.metodo_pago.toUpperCase()}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right text-sm">
                               {venta.monto_efectivo > 0 ? (
                                 <span className="text-green-600 font-medium">
                                   ${Number(venta.monto_efectivo).toFixed(2)}
@@ -331,7 +389,7 @@ export function VentasPage() {
                                 <span className="text-muted-foreground">-</span>
                               )}
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right text-sm">
                               {venta.monto_transferencia > 0 ? (
                                 <span className="text-blue-600 font-medium">
                                   ${Number(venta.monto_transferencia).toFixed(2)}
@@ -340,21 +398,26 @@ export function VentasPage() {
                                 <span className="text-muted-foreground">-</span>
                               )}
                             </TableCell>
-                            <TableCell className="text-right font-bold">
+                            <TableCell className="text-right text-sm font-bold">
                               ${Number(venta.monto_total).toFixed(2)}
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
                               {formatFecha(venta.created_at)}
                             </TableCell>
                           </TableRow>
-                        ))}
+                          )
+                        })}
                       </TableBody>
                     </Table>
                   </div>
 
                   {/* Vista móvil */}
                   <div className="md:hidden space-y-4">
-                    {ventas.map((venta) => (
+                    {ventas.map((venta) => {
+                      if (!venta.invitado || !venta.evento || !venta.lote) {
+                        return null // Skip ventas con datos incompletos
+                      }
+                      return (
                       <Card key={venta.id}>
                         <CardContent className="p-4">
                           <div className="space-y-3">
@@ -390,21 +453,21 @@ export function VentasPage() {
                             <div className="grid grid-cols-2 gap-2 pt-2 border-t">
                               <div>
                                 <p className="text-xs text-muted-foreground">Efectivo</p>
-                                <p className="font-medium text-green-600">
+                                <p className="text-sm font-medium text-green-600">
                                   ${Number(venta.monto_efectivo).toFixed(2)}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-xs text-muted-foreground">Transferencia</p>
-                                <p className="font-medium text-blue-600">
+                                <p className="text-sm font-medium text-blue-600">
                                   ${Number(venta.monto_transferencia).toFixed(2)}
                                 </p>
                               </div>
                             </div>
 
                             <div className="flex items-center justify-between pt-2 border-t">
-                              <span className="text-sm font-bold">Total</span>
-                              <span className="text-lg font-bold">
+                              <span className="text-xs font-bold">Total</span>
+                              <span className="text-base font-bold">
                                 ${Number(venta.monto_total).toFixed(2)}
                               </span>
                             </div>
@@ -415,7 +478,8 @@ export function VentasPage() {
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
+                      )
+                    })}
                   </div>
                 </>
               )}

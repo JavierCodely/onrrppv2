@@ -527,6 +527,27 @@ export function EventosPage() {
     }
   }
 
+  const handleToggleLoteActivo = async (lote: Lote) => {
+    if (!selectedEvento) return
+
+    const nuevoEstado = !lote.activo
+    try {
+      const { error } = await lotesService.updateLote(lote.id, { activo: nuevoEstado })
+      if (error) throw error
+
+      toast.success(
+        nuevoEstado
+          ? 'Lote activado - Los RRPPs pueden verlo ahora'
+          : 'Lote desactivado - Los RRPPs ya no pueden verlo'
+      )
+      await loadLotes(selectedEvento.id)
+    } catch (error) {
+      toast.error('Error al cambiar estado del lote', {
+        description: (error as Error).message,
+      })
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -1028,6 +1049,18 @@ export function EventosPage() {
                           </div>
 
                           <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleToggleLoteActivo(lote)}
+                              title={lote.activo ? 'Desactivar lote' : 'Activar lote'}
+                            >
+                              {lote.activo ? (
+                                <Eye className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <EyeOff className="h-4 w-4 text-gray-400" />
+                              )}
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"

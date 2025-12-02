@@ -251,6 +251,35 @@ export function InvitadosPage() {
     }
   }, [user, selectedEvento])
 
+  // Realtime para actualizar lotes cuando admin los activa/desactiva
+  useEffect(() => {
+    if (!selectedEvento) return
+
+    const lotesChannel = supabase
+      .channel(`lotes-updates-${selectedEvento}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'lotes',
+          filter: `uuid_evento=eq.${selectedEvento}`,
+        },
+        (payload: RealtimePostgresChangesPayload<any>) => {
+          console.log('📡 Realtime UPDATE en lote:', payload)
+          loadLotes() // Recargar lotes cuando hay cambios
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Estado de suscripción lotes UPDATE:', status)
+      })
+
+    return () => {
+      console.log('🔌 Desuscribiendo de lotes-updates')
+      lotesChannel.unsubscribe()
+    }
+  }, [selectedEvento])
+
   // Realtime para actualizar totales en las cards de eventos
   useEffect(() => {
     if (!user) return
@@ -412,6 +441,9 @@ export function InvitadosPage() {
   }
 
   const handleOpenDialog = async (invitado?: InvitadoConLote, preselectedLoteId?: string) => {
+    // Recargar lotes disponibles para obtener la lista actualizada
+    await loadLotes()
+
     if (invitado) {
       setSelectedInvitado(invitado)
       setFormData({
@@ -1589,7 +1621,7 @@ export function InvitadosPage() {
                     </div>
                     {user && (
                       <div className="text-xs text-muted-foreground text-center pt-1 border-t">
-                        QR Generado por: {user.personal.nombre} {user.personal.apellido}
+                        Entrada Generada por: {user.personal.nombre} {user.personal.apellido}
                       </div>
                     )}
                   </div>

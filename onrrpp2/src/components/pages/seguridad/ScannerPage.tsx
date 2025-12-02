@@ -26,16 +26,26 @@ export function ScannerPage() {
   const [invitado, setInvitado] = useState<InvitadoConDetalles | null>(null)
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false)
   const [showErrorAnimation, setShowErrorAnimation] = useState(false)
+  const [errorReason, setErrorReason] = useState<'ya_ingresado' | 'lote_desactivado'>('ya_ingresado')
   const [showInvalidQRAnimation, setShowInvalidQRAnimation] = useState(false)
   const [countdown, setCountdown] = useState(0) // Contador para mostrar al usuario
 
   // Usar useRef para bandera inmediata (no espera re-render)
   const isProcessingRef = useRef(false)
+  const handleQRDetectedRef = useRef<((qrCode: string) => Promise<void>) | null>(null)
 
   useEffect(() => {
     return () => {
       if (scanner) {
-        scanner.stop().catch(() => {})
+        try {
+          const state = scanner.getState()
+          // Solo detener si está en estado SCANNING (2)
+          if (state === 2) {
+            scanner.stop().catch(() => {})
+          }
+        } catch (err) {
+          // Ignorar errores en cleanup
+        }
       }
     }
   }, [scanner])
@@ -80,7 +90,9 @@ export function ScannerPage() {
         },
         async (decodedText) => {
           console.log('📷 QR detectado:', decodedText)
-          await handleQRDetected(decodedText)
+          if (handleQRDetectedRef.current) {
+            await handleQRDetectedRef.current(decodedText)
+          }
         },
         () => {
           // Error de escaneo (ignorar)
@@ -102,7 +114,11 @@ export function ScannerPage() {
   const stopScanner = async () => {
     if (scanner) {
       try {
-        await scanner.stop()
+        const state = scanner.getState()
+        // Solo detener si está en estado SCANNING (2)
+        if (state === 2) {
+          await scanner.stop()
+        }
       } catch (err) {
         console.error('Error al detener scanner:', err)
       } finally {
@@ -112,18 +128,19 @@ export function ScannerPage() {
     }
   }
 
-  const handleQRDetected = async (qrCode: string) => {
-    // Verificar con useRef (inmediato, sin esperar re-render)
-    if (isProcessingRef.current) {
-      console.log('⛔ Ya procesando, IGNORANDO completamente')
-      return
-    }
+  const handleQRDetected = useCallback(async (qrCode: string) => {
+    try {
+      // Verificar con useRef (inmediato, sin esperar re-render)
+      if (isProcessingRef.current) {
+        console.log('⛔ Ya procesando, IGNORANDO completamente')
+        return
+      }
 
-    console.log('✅ QR detectado:', qrCode)
+      console.log('✅ QR detectado:', qrCode)
 
-    // Marcar INMEDIATAMENTE como procesando
-    isProcessingRef.current = true
-    console.log('🔒 isProcessingRef = true')
+      // Marcar INMEDIATAMENTE como procesando
+      isProcessingRef.current = true
+      console.log('🔒 isProcessingRef = true')
 
     // VERIFICAR SI EL USUARIO ESTÁ ACTIVO
     if (user) {
@@ -168,16 +185,18 @@ export function ScannerPage() {
     console.log('🛑 Deteniendo scanner AHORA...')
     if (scanner) {
       try {
-        // Verificar si el scanner está corriendo antes de detenerlo
         const state = scanner.getState()
-        if (state === 2) { // 2 = Html5QrcodeScannerState.SCANNING
+        console.log('📊 Estado del scanner:', state)
+        // Solo detener si está en estado SCANNING (2)
+        if (state === 2) {
           await scanner.stop()
-          console.log('✅ Scanner detenido')
+          console.log('✅ Scanner detenido correctamente')
         } else {
-          console.log('ℹ️ Scanner ya estaba detenido (estado: ' + state + ')')
+          console.log('ℹ️ Scanner no está en estado SCANNING, saltando stop()')
         }
-      } catch (err) {
-        console.error('⚠️ Error al detener:', err)
+      } catch (err: any) {
+        // Ignorar el error - puede que ya esté detenido
+        console.log('ℹ️ Error al detener scanner (ignorando):', err?.message)
       }
       setScanning(false)
       setScanner(null)
@@ -190,6 +209,19 @@ export function ScannerPage() {
       // Mostrar modal de QR inválido
       setShowInvalidQRAnimation(true)
       // NO reiniciar automáticamente - esperar a que cierre el modal
+      return
+    }
+
+    // PASO 2.5: Verificar si el lote está activo
+    if (data.lote && !data.lote.activo) {
+      console.log('⛔ Lote desactivado detectado')
+      toast.error('Lote desactivado', {
+        description: 'Este lote ha sido desactivado por el administrador. No se permite el ingreso.',
+      })
+      // Mostrar modal de error con motivo de lote desactivado
+      setInvitado(data)
+      setErrorReason('lote_desactivado')
+      setShowErrorAnimation(true)
       return
     }
 
@@ -212,13 +244,27 @@ export function ScannerPage() {
       // NO VIP: Solo una vez
       if (data.ingresado) {
         // Ya ingresado - mostrar error en rojo
+        setErrorReason('ya_ingresado')
         setShowErrorAnimation(true)
       } else {
         // Primera vez - marcar ingreso
         await marcarIngresoAutomatico(data)
       }
     }
-  }
+    } catch (err: any) {
+      console.error('❌ Error en handleQRDetected:', err)
+      toast.error('Error al procesar QR', {
+        description: err?.message || 'Intenta nuevamente',
+      })
+      // Liberar el flag de procesamiento en caso de error
+      isProcessingRef.current = false
+    }
+  }, [user, scanner, signOut])
+
+  // Actualizar la referencia cada vez que cambie handleQRDetected
+  useEffect(() => {
+    handleQRDetectedRef.current = handleQRDetected
+  }, [handleQRDetected])
 
   const marcarIngresoAutomatico = async (invitadoData: InvitadoConDetalles) => {
     const { error } = await invitadosService.marcarIngreso(invitadoData.qr_code)
@@ -248,13 +294,27 @@ export function ScannerPage() {
     setShowInvalidQRAnimation(false)
     setInvitado(null)
 
-    // PASO 2: Resetear completamente (ignorar errores de limpieza)
-    try {
-      if (scanner) {
-        scanner.clear()
+    // PASO 2: DETENER completamente el scanner ANTES del countdown
+    if (scanner) {
+      try {
+        const state = scanner.getState()
+        console.log('📊 Estado del scanner antes de detener:', state)
+        // Solo detener si está en estado SCANNING (2)
+        if (state === 2) {
+          await scanner.stop()
+          console.log('✅ Scanner detenido antes del countdown')
+        } else {
+          console.log('ℹ️ Scanner no está en estado SCANNING, saltando stop()')
+        }
+      } catch (e: any) {
+        console.log('ℹ️ Error al detener scanner (ignorando):', e?.message)
       }
-    } catch (e) {
-      console.log('Ignorando error de limpieza')
+
+      try {
+        scanner.clear()
+      } catch (e: any) {
+        console.log('ℹ️ Error al limpiar scanner (ignorando):', e?.message)
+      }
     }
 
     setScanner(null)
@@ -293,7 +353,9 @@ export function ScannerPage() {
           qrbox: { width: 250, height: 250 },
         },
         async (decodedText) => {
-          await handleQRDetected(decodedText)
+          if (handleQRDetectedRef.current) {
+            await handleQRDetectedRef.current(decodedText)
+          }
         },
         () => {}
       )
@@ -516,8 +578,15 @@ export function ScannerPage() {
                 <div className="space-y-4 text-center">
                   <div>
                     <h2 className="text-3xl font-bold text-red-600">
-                      ¡Invitado Ya Ingresado!
+                      {errorReason === 'lote_desactivado'
+                        ? '¡Lote Desactivado!'
+                        : '¡Invitado Ya Ingresado!'}
                     </h2>
+                    {errorReason === 'lote_desactivado' && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Este lote ha sido desactivado por el administrador
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -542,7 +611,14 @@ export function ScannerPage() {
                       </div>
                     )}
 
-                    {invitado.fecha_ingreso && (
+                    {invitado.lote && (
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                        <Ticket className="h-4 w-4" />
+                        <span>{invitado.lote.nombre}</span>
+                      </div>
+                    )}
+
+                    {errorReason === 'ya_ingresado' && invitado.fecha_ingreso && (
                       <p className="text-sm text-muted-foreground mt-4">
                         Ingresó el {new Date(invitado.fecha_ingreso).toLocaleString('es-AR', {
                           dateStyle: 'medium',
