@@ -38,24 +38,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import {
   Plus,
   QrCode,
-  Edit,
-  Trash2,
   MapPin,
   UserCheck,
   X,
@@ -81,7 +69,6 @@ export function InvitadosPage() {
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [qrDialogOpen, setQrDialogOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedInvitado, setSelectedInvitado] = useState<InvitadoConLote | null>(null)
   const [formData, setFormData] = useState({
     nombre: '',
@@ -770,47 +757,6 @@ export function InvitadosPage() {
     }
   }
 
-  const handleOpenDeleteDialog = (invitado: InvitadoConLote) => {
-    // Verificar si el invitado ya ingresó
-    if (invitado.ingresado) {
-      toast.error('No se puede eliminar', {
-        description: 'Este invitado ya ingresó al evento y no puede ser eliminado',
-      })
-      return
-    }
-
-    setSelectedInvitado(invitado)
-    setDeleteDialogOpen(true)
-  }
-
-  const handleDelete = async () => {
-    if (!selectedInvitado) return
-
-    // Doble verificación por seguridad
-    if (selectedInvitado.ingresado) {
-      toast.error('No se puede eliminar', {
-        description: 'Este invitado ya ingresó al evento',
-      })
-      setDeleteDialogOpen(false)
-      setSelectedInvitado(null)
-      return
-    }
-
-    const { error } = await invitadosService.deleteInvitado(selectedInvitado.id)
-    if (error) {
-      toast.error('Error al eliminar invitado', {
-        description: error.message,
-      })
-    } else {
-      toast.success('Invitado eliminado correctamente')
-      setDeleteDialogOpen(false)
-      setSelectedInvitado(null)
-      loadInvitados()
-      // Recargar lotes para actualizar disponibilidad
-      loadLotes()
-    }
-  }
-
   const handleEventoClick = (eventoId: string) => {
     if (selectedEvento === eventoId) {
       // Si el mismo evento está seleccionado, deseleccionarlo (colapsar)
@@ -1086,20 +1032,6 @@ export function InvitadosPage() {
                                         >
                                           <QrCode className="h-4 w-4" />
                                         </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleOpenDialog(invitado)}
-                                        >
-                                          <Edit className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleOpenDeleteDialog(invitado)}
-                                        >
-                                          <Trash2 className="h-4 w-4 text-red-600" />
-                                        </Button>
                                       </div>
                                     </TableCell>
                                   </TableRow>
@@ -1157,20 +1089,6 @@ export function InvitadosPage() {
                                       >
                                         <QrCode className="h-4 w-4 mr-2" />
                                         Ver QR
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleOpenDialog(invitado)}
-                                      >
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleOpenDeleteDialog(invitado)}
-                                      >
-                                        <Trash2 className="h-4 w-4 text-red-600" />
                                       </Button>
                                     </div>
                                   </div>
@@ -1688,29 +1606,6 @@ export function InvitadosPage() {
         </DialogPortal>
       </Dialog>
 
-      {/* Dialog Eliminar */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará el invitado "
-              {selectedInvitado?.nombre} {selectedInvitado?.apellido}".
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setSelectedInvitado(null)}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }
