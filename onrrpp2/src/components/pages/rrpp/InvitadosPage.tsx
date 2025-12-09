@@ -55,6 +55,7 @@ import {
   Filter,
   ChevronDown,
   ChevronUp,
+  Pencil,
 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 
@@ -76,7 +77,7 @@ export function InvitadosPage() {
     edad: '',
     departamento: '',
     localidad: '',
-    sexo: 'hombre' as 'hombre' | 'mujer',
+    sexo: '' as 'hombre' | 'mujer' | '',
     uuid_lote: '',
     metodo_pago: '' as MetodoPago | '',
     monto_efectivo: '',
@@ -100,13 +101,9 @@ export function InvitadosPage() {
   const [searchNombre, setSearchNombre] = useState('')
   const [filterLote, setFilterLote] = useState<string>('ALL')
 
-  // Autocomplete de ubicaciones
+  // Ubicaciones
   const [departamentos, setDepartamentos] = useState<string[]>([])
   const [localidades, setLocalidades] = useState<string[]>([])
-  const [filteredDepartamentos, setFilteredDepartamentos] = useState<string[]>([])
-  const [filteredLocalidades, setFilteredLocalidades] = useState<string[]>([])
-  const [showDepartamentoDropdown, setShowDepartamentoDropdown] = useState(false)
-  const [showLocalidadDropdown, setShowLocalidadDropdown] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -119,56 +116,17 @@ export function InvitadosPage() {
     const { data, error } = await ubicacionesService.getDepartamentos()
     if (!error && data) {
       setDepartamentos(data)
-      setFilteredDepartamentos(data)
     }
   }
 
   const handleDepartamentoChange = async (value: string) => {
     setFormData({ ...formData, departamento: value, localidad: '' })
 
-    // Filtrar departamentos
-    const filtered = departamentos.filter(d =>
-      d.toLowerCase().includes(value.toLowerCase())
-    )
-    setFilteredDepartamentos(filtered)
-    setShowDepartamentoDropdown(value.length > 0 && filtered.length > 0)
-
-    // Cargar localidades del departamento
-    if (value.length > 2) {
-      const { data, error } = await ubicacionesService.searchLocalidades('', value)
-      if (!error && data) {
-        setLocalidades(data)
-        setFilteredLocalidades(data)
-      }
-    }
-  }
-
-  const handleLocalidadChange = (value: string) => {
-    setFormData({ ...formData, localidad: value })
-
-    // Filtrar localidades
-    const filtered = localidades.filter(l =>
-      l.toLowerCase().includes(value.toLowerCase())
-    )
-    setFilteredLocalidades(filtered)
-    setShowLocalidadDropdown(value.length > 0 && filtered.length > 0)
-  }
-
-  const selectDepartamento = async (departamento: string) => {
-    setFormData({ ...formData, departamento, localidad: '' })
-    setShowDepartamentoDropdown(false)
-
     // Cargar localidades del departamento seleccionado
-    const { data, error } = await ubicacionesService.getLocalidadesByDepartamento(departamento)
+    const { data, error } = await ubicacionesService.getLocalidadesByDepartamento(value)
     if (!error && data) {
       setLocalidades(data)
-      setFilteredLocalidades(data)
     }
-  }
-
-  const selectLocalidad = (localidad: string) => {
-    setFormData({ ...formData, localidad })
-    setShowLocalidadDropdown(false)
   }
 
   // Manejar parámetros de URL (eventoId y loteId preseleccionados)
@@ -397,6 +355,7 @@ export function InvitadosPage() {
       setInvitados(data)
     }
     setLoading(false)
+    return data || []
   }
 
   const handleShowQR = async (invitado: InvitadoConLote) => {
@@ -459,7 +418,6 @@ export function InvitadosPage() {
         const { data } = await ubicacionesService.getLocalidadesByDepartamento(invitado.departamento)
         if (data) {
           setLocalidades(data)
-          setFilteredLocalidades(data)
         }
       }
 
@@ -490,14 +448,13 @@ export function InvitadosPage() {
       setProfileImageFile(null)
       setProfileImagePreview('')
       setLocalidades([])
-      setFilteredLocalidades([])
       setFormData({
         nombre: '',
         apellido: '',
         edad: '',
         departamento: '',
         localidad: '',
-        sexo: 'hombre',
+        sexo: '',
         uuid_lote: preselectedLoteId || '',
         metodo_pago: '',
         monto_efectivo: '',
@@ -526,16 +483,13 @@ export function InvitadosPage() {
     setProfileImageFile(null)
     setProfileImagePreview('')
     setLocalidades([])
-    setFilteredLocalidades([])
-    setShowDepartamentoDropdown(false)
-    setShowLocalidadDropdown(false)
     setFormData({
       nombre: '',
       apellido: '',
       edad: '',
       departamento: '',
       localidad: '',
-      sexo: 'hombre',
+      sexo: '',
       uuid_lote: '',
       metodo_pago: '',
       monto_efectivo: '',
@@ -549,6 +503,12 @@ export function InvitadosPage() {
     e.preventDefault()
 
     if (!user || !selectedEvento) return
+
+    // Validar que se haya seleccionado el sexo
+    if (!formData.sexo) {
+      toast.error('Debe seleccionar el sexo')
+      return
+    }
 
     // Validar que se haya seleccionado un lote (obligatorio)
     if (!formData.uuid_lote) {
@@ -644,7 +604,7 @@ export function InvitadosPage() {
         edad: formData.edad ? parseInt(formData.edad) : null,
         departamento: formData.departamento.trim() || null,
         localidad: formData.localidad.trim() || null,
-        sexo: formData.sexo,
+        sexo: formData.sexo as 'hombre' | 'mujer', // Ya validado arriba
         uuid_lote: formData.uuid_lote || null,
         profile_image_url: profileImageUrl || null,
       }
@@ -672,6 +632,83 @@ export function InvitadosPage() {
         // Recargar lotes para actualizar disponibilidad
         loadLotes()
       } else {
+        // Si el lote cambió, actualizar la venta
+        if (selectedInvitado.uuid_lote !== updateData.uuid_lote) {
+          try {
+            // Obtener venta actual si existe
+            const ventaActual = await ventasService.getVentaByInvitado(selectedInvitado.id)
+
+            // Obtener información del nuevo lote
+            const nuevoLote = lotes.find(l => l.id === updateData.uuid_lote)
+
+            // Si había venta y el nuevo lote también tiene precio: actualizar venta existente
+            if (ventaActual && nuevoLote && nuevoLote.precio > 0) {
+              // Calcular montos según el método de pago anterior
+              let monto_efectivo = 0
+              let monto_transferencia = 0
+
+              if (ventaActual.metodo_pago === 'efectivo') {
+                monto_efectivo = nuevoLote.precio
+              } else if (ventaActual.metodo_pago === 'transferencia') {
+                monto_transferencia = nuevoLote.precio
+              } else if (ventaActual.metodo_pago === 'mixto') {
+                // Mantener la proporción del pago anterior
+                const totalAnterior = Number(ventaActual.monto_total)
+                if (totalAnterior > 0) {
+                  const proporcionEfectivo = Number(ventaActual.monto_efectivo) / totalAnterior
+                  monto_efectivo = nuevoLote.precio * proporcionEfectivo
+                  monto_transferencia = nuevoLote.precio - monto_efectivo
+                } else {
+                  // Si no hay total anterior, usar efectivo por defecto
+                  monto_efectivo = nuevoLote.precio
+                }
+              }
+
+              const updateDataVenta = {
+                uuid_lote: updateData.uuid_lote!,
+                monto_total: nuevoLote.precio,
+                monto_efectivo,
+                monto_transferencia,
+              }
+
+              console.log('📝 Actualizando venta:', {
+                ventaId: ventaActual.id,
+                loteAnterior: ventaActual.uuid_lote,
+                loteNuevo: updateData.uuid_lote,
+                updateData: updateDataVenta
+              })
+
+              await ventasService.updateVenta(ventaActual.id, updateDataVenta)
+
+              console.log('✅ Venta actualizada exitosamente')
+            }
+            // Si había venta y el nuevo lote es gratis: eliminar venta
+            else if (ventaActual && (!nuevoLote || nuevoLote.precio === 0)) {
+              await ventasService.deleteVenta(ventaActual.id)
+            }
+            // Si no había venta y el nuevo lote tiene precio: crear venta
+            else if (!ventaActual && nuevoLote && nuevoLote.precio > 0) {
+              // Necesitamos pedir método de pago (por ahora usar efectivo por defecto)
+              toast.info('Se creó una venta para el nuevo lote con precio')
+              // Podríamos mostrar un modal para pedir método de pago, pero por simplicidad usamos efectivo
+              await ventasService.createVenta({
+                uuid_invitado: selectedInvitado.id,
+                uuid_evento: selectedEvento,
+                uuid_lote: updateData.uuid_lote!,
+                id_rrpp: user.id,
+                metodo_pago: 'efectivo',
+                monto_total: nuevoLote.precio,
+                monto_efectivo: nuevoLote.precio,
+                monto_transferencia: 0,
+                observaciones: 'Venta creada al cambiar de lote',
+              })
+            }
+          } catch (ventaError) {
+            console.error('Error al actualizar venta:', ventaError)
+            toast.warning('Invitado actualizado, pero hubo un error al actualizar la venta')
+          }
+        }
+
         toast.success('Invitado actualizado correctamente')
         handleCloseDialog()
         loadInvitados()
@@ -689,7 +726,7 @@ export function InvitadosPage() {
         departamento: formData.departamento.trim() || null,
         localidad: formData.localidad.trim() || null,
         dni: `${formData.nombre.trim()}-${formData.apellido.trim()}-${Date.now()}`,
-        sexo: formData.sexo,
+        sexo: formData.sexo as 'hombre' | 'mujer', // Ya validado arriba
         uuid_evento: selectedEvento,
         uuid_lote: formData.uuid_lote, // Obligatorio, ya validado arriba
         profile_image_url: profileImageUrl || null,
@@ -743,12 +780,13 @@ export function InvitadosPage() {
         }
 
         handleCloseDialog()
-        await loadInvitados()
+        // Recargar invitados y obtener la lista actualizada
+        const invitadosActualizados = await loadInvitados()
         // Recargar lotes para actualizar disponibilidad
         await loadLotes()
         // Mostrar QR automáticamente buscando el invitado con detalles completos
-        if (data && invitados.length > 0) {
-          const invitadoCreado = invitados.find(i => i.id === data.id)
+        if (data && invitadosActualizados) {
+          const invitadoCreado = invitadosActualizados.find(i => i.id === data.id)
           if (invitadoCreado) {
             await handleShowQR(invitadoCreado)
           }
@@ -1025,10 +1063,21 @@ export function InvitadosPage() {
                                     </TableCell>
                                     <TableCell className="text-right">
                                       <div className="flex justify-end gap-2">
+                                        {!invitado.ingresado && (
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleOpenDialog(invitado)}
+                                            title="Editar invitado"
+                                          >
+                                            <Pencil className="h-4 w-4" />
+                                          </Button>
+                                        )}
                                         <Button
                                           variant="ghost"
                                           size="sm"
                                           onClick={() => handleShowQR(invitado)}
+                                          title="Ver código QR"
                                         >
                                           <QrCode className="h-4 w-4" />
                                         </Button>
@@ -1081,11 +1130,22 @@ export function InvitadosPage() {
                                     </div>
 
                                     <div className="flex gap-2 pt-2 border-t">
+                                      {!invitado.ingresado && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleOpenDialog(invitado)}
+                                          className="flex-1"
+                                        >
+                                          <Pencil className="h-4 w-4 mr-2" />
+                                          Editar
+                                        </Button>
+                                      )}
                                       <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={() => handleShowQR(invitado)}
-                                        className="flex-1"
+                                        className={!invitado.ingresado ? "flex-1" : "w-full"}
                                       >
                                         <QrCode className="h-4 w-4 mr-2" />
                                         Ver QR
@@ -1176,15 +1236,16 @@ export function InvitadosPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sexo">Sexo</Label>
+                  <Label htmlFor="sexo">Sexo *</Label>
                   <Select
                     value={formData.sexo}
                     onValueChange={(value: 'hombre' | 'mujer') =>
                       setFormData({ ...formData, sexo: value })
                     }
+                    required
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Seleccionar sexo" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="hombre">Hombre</SelectItem>
@@ -1195,61 +1256,45 @@ export function InvitadosPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2 relative">
-                  <Label htmlFor="departamento">Departamento (Municipio)</Label>
-                  <Input
-                    id="departamento"
-                    name="invitado-departamento"
+                <div className="space-y-2">
+                  <Label htmlFor="departamento">Departamento (Municipio) *</Label>
+                  <Select
                     value={formData.departamento}
-                    onChange={(e) => handleDepartamentoChange(e.target.value)}
-                    onFocus={() => setShowDepartamentoDropdown(filteredDepartamentos.length > 0)}
-                    onBlur={() => setTimeout(() => setShowDepartamentoDropdown(false), 200)}
-                    placeholder="Ej: Capital"
-                    autoComplete="off"
+                    onValueChange={handleDepartamentoChange}
                     required
-                  />
-                  {showDepartamentoDropdown && filteredDepartamentos.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-60 overflow-auto">
-                      {filteredDepartamentos.map((dept) => (
-                        <div
-                          key={dept}
-                          className="px-4 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100"
-                          onMouseDown={() => selectDepartamento(dept)}
-                        >
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar departamento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departamentos.map((dept) => (
+                        <SelectItem key={dept} value={dept}>
                           {dept}
-                        </div>
+                        </SelectItem>
                       ))}
-                    </div>
-                  )}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div className="space-y-2 relative">
-                  <Label htmlFor="localidad">Localidad</Label>
-                  <Input
-                    id="localidad"
-                    name="invitado-localidad"
+                <div className="space-y-2">
+                  <Label htmlFor="localidad">Localidad *</Label>
+                  <Select
                     value={formData.localidad}
-                    onChange={(e) => handleLocalidadChange(e.target.value)}
-                    onFocus={() => setShowLocalidadDropdown(filteredLocalidades.length > 0)}
-                    onBlur={() => setTimeout(() => setShowLocalidadDropdown(false), 200)}
-                    placeholder="Ej: Posadas"
-                    autoComplete="off"
-                    required
+                    onValueChange={(value) => setFormData({ ...formData, localidad: value })}
                     disabled={!formData.departamento}
-                  />
-                  {showLocalidadDropdown && filteredLocalidades.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-60 overflow-auto">
-                      {filteredLocalidades.map((loc) => (
-                        <div
-                          key={loc}
-                          className="px-4 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100"
-                          onMouseDown={() => selectLocalidad(loc)}
-                        >
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar localidad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {localidades.map((loc) => (
+                        <SelectItem key={loc} value={loc}>
                           {loc}
-                        </div>
+                        </SelectItem>
                       ))}
-                    </div>
-                  )}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

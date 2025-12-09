@@ -489,13 +489,24 @@ export function ScannerPage() {
                     </h2>
                   </div>
 
-                  <div className="space-y-2">
-                    <p className="text-2xl font-bold">
+                  <div className="space-y-3">
+                    <p className="text-4xl font-bold text-gray-900 dark:text-white">
                       {invitado.nombre} {invitado.apellido}
                     </p>
 
+                    {invitado.edad && (
+                      <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                        {invitado.edad} años
+                      </p>
+                    )}
+
+                    {/* Entrada generada por RRPP */}
+                    <p className="text-sm text-muted-foreground pt-2">
+                      Entrada generada por el RRPP: {invitado.rrpp.nombre} {invitado.rrpp.apellido}
+                    </p>
+
                     {invitado.lote && (
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-center gap-2 pt-2">
                         {invitado.lote.es_vip ? (
                           <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white gap-1">
                             <Crown className="h-3 w-3" />
@@ -508,12 +519,6 @@ export function ScannerPage() {
                           </Badge>
                         )}
                       </div>
-                    )}
-
-                    {invitado.edad && (
-                      <p className="text-lg text-muted-foreground">
-                        {invitado.edad} años
-                      </p>
                     )}
 
                     {(invitado.departamento || invitado.localidad) && (
@@ -589,19 +594,24 @@ export function ScannerPage() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <p className="text-2xl font-bold">
+                  <div className="space-y-3">
+                    <p className="text-4xl font-bold text-gray-900 dark:text-white">
                       {invitado.nombre} {invitado.apellido}
                     </p>
 
                     {invitado.edad && (
-                      <p className="text-lg text-muted-foreground">
+                      <p className="text-3xl font-bold text-gray-900 dark:text-white">
                         {invitado.edad} años
                       </p>
                     )}
 
+                    {/* Entrada generada por RRPP */}
+                    <p className="text-sm text-muted-foreground pt-2">
+                      Entrada generada por el RRPP: {invitado.rrpp.nombre} {invitado.rrpp.apellido}
+                    </p>
+
                     {(invitado.departamento || invitado.localidad) && (
-                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground pt-2">
                         <MapPin className="h-4 w-4" />
                         <span>
                           {invitado.localidad && invitado.departamento

@@ -14,7 +14,9 @@ export interface CreateVentaInput {
 }
 
 export interface UpdateVentaInput {
+  uuid_lote?: string
   metodo_pago?: MetodoPago
+  monto_total?: number
   monto_efectivo?: number
   monto_transferencia?: number
   observaciones?: string
