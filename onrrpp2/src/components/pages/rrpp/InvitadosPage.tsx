@@ -1170,13 +1170,13 @@ export function InvitadosPage() {
       {/* Dialog Crear/Editar Invitado */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          className="max-w-full md:max-w-2xl h-screen md:h-auto m-0 md:m-4 rounded-none md:rounded-lg p-0"
+          className="max-w-full md:max-w-2xl h-screen md:h-auto m-0 md:m-4 rounded-none md:rounded-lg p-0 flex flex-col"
           onInteractOutside={(e) => {
             // Prevenir cierre al hacer clic en Select u otros elementos portalizados
             e.preventDefault()
           }}
         >
-          <DialogHeader className="px-4 pt-4 pb-2 border-b bg-white dark:bg-slate-950">
+          <DialogHeader className="px-4 pt-4 pb-2 border-b bg-white dark:bg-slate-950 flex-shrink-0">
             <DialogTitle>
               {selectedInvitado ? 'Editar Invitado' : 'Nuevo Invitado'}
             </DialogTitle>
@@ -1187,8 +1187,8 @@ export function InvitadosPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="relative h-[calc(100vh-80px)] md:h-auto">
-            <div className="space-y-4 py-4 px-4 overflow-y-auto h-full pb-24 md:pb-4">
+          <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden md:block md:overflow-visible">
+            <div className="space-y-4 py-4 px-4 overflow-y-auto flex-1 md:overflow-visible md:flex-none">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="nombre">Nombre</Label>
@@ -1490,7 +1490,7 @@ export function InvitadosPage() {
               )}
             </div>
 
-            <div className="fixed md:static bottom-5 md:bottom-0 left-0 right-0 bg-white dark:bg-slate-950 border-t p-4 flex flex-row gap-2 md:justify-end shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+            <div className="flex-shrink-0 bg-white dark:bg-slate-950 border-t p-4 mb-[30px] md:mb-0 flex flex-row gap-2 md:justify-end shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
               <Button
                 type="button"
                 variant="outline"
