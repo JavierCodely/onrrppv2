@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import type { AuthUser } from '../types/database'
+import { authLogsService } from './auth-logs.service'
 
 // Función para traducir errores comunes al español
 const translateAuthError = (error: Error): string => {
@@ -100,6 +101,9 @@ export const authService = {
         club: personal.club,
       }
 
+      // Registrar login exitoso
+      await authLogsService.logLoginSuccess(user.id, user.email)
+
       return { user, error: null }
     } catch (error) {
       const translatedMessage = translateAuthError(error as Error)
@@ -109,8 +113,17 @@ export const authService = {
 
   async signOut(): Promise<{ error: Error | null }> {
     try {
+      // Obtener usuario actual antes de cerrar sesión
+      const { data: { user } } = await supabase.auth.getUser()
+
       const { error } = await supabase.auth.signOut()
       if (error) throw error
+
+      // Registrar logout si había un usuario
+      if (user?.id && user?.email) {
+        await authLogsService.logLogout(user.id, user.email)
+      }
+
       return { error: null }
     } catch (error) {
       return { error: error as Error }

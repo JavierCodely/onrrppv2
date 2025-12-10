@@ -36,6 +36,22 @@ Multi-tenant event management platform with role-based access control (Admin, RR
 4. `ProtectedRoute` component guards all authenticated routes
 5. `DashboardRouter` redirects to role-specific dashboard
 
+### Security Features
+**Authentication Security** (see `SECURITY.md` for details):
+- **Audit Logging**: All login attempts tracked in `auth_logs` table
+  - Success, failures, and logouts with timestamps
+  - User agent and IP address (optional)
+  - 90-day retention policy
+- **Rate Limiting**: Brute force protection
+  - Max 5 failed attempts per email in 15 minutes
+  - 5-minute temporary lockout after threshold
+  - Visual counter and countdown timer
+- **reCAPTCHA v2**: Auto-enables after multiple failed attempts
+  - Required environment variable: `VITE_RECAPTCHA_SITE_KEY`
+  - Configure at: https://www.google.com/recaptcha/admin
+- **Password Visibility Toggle**: UX improvement without security compromise
+- **Migration**: `036_create_auth_logs.sql` must be executed
+
 ### Database Schema
 **Core Tables** (see `supabase/README.md` for full schema):
 - `clubs` - Tenant root, all data cascades from here
@@ -46,6 +62,7 @@ Multi-tenant event management platform with role-based access control (Admin, RR
 - `ventas` - Sales tracking (optional, may not exist in all deployments)
 - `ubicaciones` - Department/locality catalog for Argentina
 - `eventos_rrpp_stats` - View showing RRPP-specific stats per event
+- `auth_logs` - Audit log of authentication attempts (login success/failed, logout)
 
 **Auto-Increment Triggers** (with `SECURITY DEFINER`):
 - `increment_total_invitados()` - +1 on INSERT to invitados
@@ -115,6 +132,7 @@ supabase.channel('invitados-rrpp').on('postgres_changes', { event: '*', table: '
 ```env
 VITE_SUPABASE_URL=https://xxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJxxx...
+VITE_RECAPTCHA_SITE_KEY=your-recaptcha-site-key  # For login security (optional but recommended)
 ```
 
 ### Styling
@@ -146,6 +164,7 @@ VITE_SUPABASE_ANON_KEY=eyJxxx...
 - `020_add_rrpp_counters_view.sql` - Create `eventos_rrpp_stats` view for RRPP stats
 - `021_prevent_delete_ingresados.sql` - Block deletion of checked-in invitados
 - `024_recreate_trigger_functions.sql` - Fix trigger functions with SECURITY DEFINER
+- `036_create_auth_logs.sql` - Create auth_logs table for audit logging (login security)
 
 **Troubleshooting migrations**:
 - `019_recalculate_counters.sql` - Manually recalculate event counters
@@ -200,6 +219,8 @@ VALUES ('auth-uuid-here', 'Test', 'User', 30, 'hombre', 'Buenos Aires', 'admin',
 - Protected routes: `src/components/organisms/ProtectedRoute.tsx`
 
 ### Core Services
+- `src/services/auth.service.ts` - Authentication (login, logout, getCurrentUser)
+- `src/services/auth-logs.service.ts` - Security audit logging (login attempts, failures, logouts)
 - `src/services/eventos.service.ts` - Events CRUD + `getEventosRRPPStats()` for RRPP view
 - `src/services/invitados.service.ts` - Invitados CRUD + image upload for VIP
 - `src/services/lotes.service.ts` - Ticket batch management
@@ -207,6 +228,7 @@ VALUES ('auth-uuid-here', 'Test', 'User', 30, 'hombre', 'Buenos Aires', 'admin',
 - `src/services/storage.service.ts` - Supabase Storage abstraction
 
 ### Key Pages
+- `src/components/pages/LoginPage.tsx` - Login with reCAPTCHA, rate limiting, password visibility toggle
 - `src/components/pages/admin/EventosPage.tsx` - Admin events with realtime total counters
 - `src/components/pages/rrpp/EventosRRPPPage.tsx` - RRPP events with personal counters
 - `src/components/pages/rrpp/InvitadosPage.tsx` - RRPP invitados management (VIP support)
@@ -214,6 +236,7 @@ VALUES ('auth-uuid-here', 'Test', 'User', 30, 'hombre', 'Buenos Aires', 'admin',
 
 ### Database
 - Schema docs: `supabase/README.md`
+- Security docs: `SECURITY.md` (authentication security features)
 - Migrations: `supabase/migrations/*.sql` (execute in numerical order)
 
 ### Types
