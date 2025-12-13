@@ -7,6 +7,7 @@ export interface InvitadoConLote extends Invitado {
     nombre: string
     estado: boolean
     banner_url: string | null
+    fecha: string
   }
 }
 
@@ -59,7 +60,7 @@ export const invitadosService = {
         .select(`
           *,
           lote:lotes(*),
-          evento:eventos!invitados_uuid_evento_fkey(nombre, estado, banner_url)
+          evento:eventos!invitados_uuid_evento_fkey(nombre, estado, banner_url, fecha)
         `)
         .eq('id_rrpp', rrppId)
 

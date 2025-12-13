@@ -136,6 +136,15 @@ export function EventosRRPPPage() {
     }
   }
 
+  const formatFechaCorta = (fecha: string) => {
+    try {
+      // Formato: SAB. 20 DIC
+      return format(new Date(fecha), "EEE. d MMM", { locale: es }).toUpperCase()
+    } catch {
+      return fecha
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -158,54 +167,64 @@ export function EventosRRPPPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-4">
           {eventos.map((evento) => (
             <Card
               key={evento.evento_id}
               className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => handleOpenLotesDialog(evento)}
             >
-              {/* Banner */}
-              {evento.evento_banner_url ? (
-                <div className="w-full h-48 bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                  <img
-                    src={evento.evento_banner_url}
-                    alt={evento.evento_nombre}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="w-full h-48 bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                  <Calendar className="h-12 w-12 text-muted-foreground opacity-30" />
-                </div>
-              )}
-
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  <h3 className="font-bold text-lg">{evento.evento_nombre}</h3>
-
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <Calendar className="h-4 w-4" />
-                      {formatFecha(evento.evento_fecha)}
+              <div className="flex h-24">
+                {/* Banner Izquierda */}
+                <div className="w-40 flex-shrink-0">
+                  {evento.evento_banner_url ? (
+                    <img
+                      src={evento.evento_banner_url}
+                      alt={evento.evento_nombre}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <Calendar className="h-8 w-8 text-muted-foreground/30" />
                     </div>
-                    <div className="text-xs text-muted-foreground ml-6">
+                  )}
+                </div>
+
+                {/* Información Derecha */}
+                <div className="flex-1 p-3 flex flex-col justify-between">
+                  {/* Fecha y Hora */}
+                  <div className="flex items-center gap-2">
+                    <div className="px-3 py-1 rounded-md bg-primary flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-primary-foreground">
+                        {formatFechaCorta(evento.evento_fecha)}
+                      </span>
+                    </div>
+                    <span className="text-sm font-semibold text-muted-foreground">
                       {formatHora(evento.evento_fecha)} hs
-                    </div>
+                    </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-sm pt-2 border-t">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>{evento.mis_invitados}</span>
+                  {/* Título del evento */}
+                  <h3 className="font-bold text-sm line-clamp-1">
+                    {evento.evento_nombre}
+                  </h3>
+
+                  {/* Estadísticas */}
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-bold">{evento.mis_invitados}</span>
+                      <span className="text-[10px] text-muted-foreground">Invitados</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <UserCheck className="h-4 w-4 text-green-600" />
-                      <span>{evento.mis_ingresados}</span>
+
+                    <div className="flex items-center gap-1.5">
+                      <UserCheck className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-bold text-primary">{evento.mis_ingresados}</span>
+                      <span className="text-[10px] text-muted-foreground">Ingresados</span>
                     </div>
                   </div>
                 </div>
-              </CardContent>
+              </div>
             </Card>
           ))}
         </div>

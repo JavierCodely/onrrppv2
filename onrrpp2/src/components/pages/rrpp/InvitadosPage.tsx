@@ -58,6 +58,8 @@ import {
   Pencil,
 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 
 export function InvitadosPage() {
   const { user } = useAuthStore()
@@ -91,6 +93,7 @@ export function InvitadosPage() {
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
   const [profileImagePreview, setProfileImagePreview] = useState<string>('')
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [ventaInfo, setVentaInfo] = useState<{
     metodo_pago: string
     monto_total: number
@@ -483,6 +486,7 @@ export function InvitadosPage() {
     setProfileImageFile(null)
     setProfileImagePreview('')
     setLocalidades([])
+    setSubmitting(false)
     setFormData({
       nombre: '',
       apellido: '',
@@ -504,15 +508,21 @@ export function InvitadosPage() {
 
     if (!user || !selectedEvento) return
 
+    // Evitar múltiples envíos
+    if (submitting) return
+    setSubmitting(true)
+
     // Validar que se haya seleccionado el sexo
     if (!formData.sexo) {
       toast.error('Debe seleccionar el sexo')
+      setSubmitting(false)
       return
     }
 
     // Validar que se haya seleccionado un lote (obligatorio)
     if (!formData.uuid_lote) {
       toast.error('Debe seleccionar un lote')
+      setSubmitting(false)
       return
     }
 
@@ -521,6 +531,7 @@ export function InvitadosPage() {
     // Validar que el lote existe
     if (!loteSeleccionado) {
       toast.error('El lote seleccionado no existe')
+      setSubmitting(false)
       return
     }
 
@@ -528,10 +539,12 @@ export function InvitadosPage() {
     if (loteSeleccionado && loteSeleccionado.es_vip) {
       if (!selectedInvitado && !profileImageFile) {
         toast.error('La imagen de perfil es obligatoria para invitados VIP')
+        setSubmitting(false)
         return
       }
       if (selectedInvitado && !formData.profile_image_url && !profileImageFile) {
         toast.error('La imagen de perfil es obligatoria para invitados VIP')
+        setSubmitting(false)
         return
       }
     }
@@ -540,6 +553,7 @@ export function InvitadosPage() {
     if (!selectedInvitado && loteSeleccionado && loteSeleccionado.precio > 0) {
       if (!formData.metodo_pago) {
         toast.error('Debe seleccionar un método de pago')
+        setSubmitting(false)
         return
       }
 
@@ -550,20 +564,24 @@ export function InvitadosPage() {
       if (formData.metodo_pago === 'efectivo') {
         if (montoEfectivo !== loteSeleccionado.precio) {
           toast.error('El monto en efectivo debe ser igual al precio del lote')
+          setSubmitting(false)
           return
         }
       } else if (formData.metodo_pago === 'transferencia') {
         if (montoTransferencia !== loteSeleccionado.precio) {
           toast.error('El monto en transferencia debe ser igual al precio del lote')
+          setSubmitting(false)
           return
         }
       } else if (formData.metodo_pago === 'mixto') {
         if (montoEfectivo === 0 || montoTransferencia === 0) {
           toast.error('Debe ingresar montos tanto en efectivo como en transferencia')
+          setSubmitting(false)
           return
         }
         if (total !== loteSeleccionado.precio) {
           toast.error(`La suma de efectivo y transferencia debe ser igual al precio del lote ($${loteSeleccionado.precio})`)
+          setSubmitting(false)
           return
         }
       }
@@ -585,6 +603,7 @@ export function InvitadosPage() {
         toast.error('Error al subir la imagen de perfil', {
           description: uploadError.message,
         })
+        setSubmitting(false)
         return
       }
 
@@ -631,6 +650,7 @@ export function InvitadosPage() {
         }
         // Recargar lotes para actualizar disponibilidad
         loadLotes()
+        setSubmitting(false)
       } else {
         // Si el lote cambió, actualizar la venta
         if (selectedInvitado.uuid_lote !== updateData.uuid_lote) {
@@ -710,6 +730,7 @@ export function InvitadosPage() {
         }
 
         toast.success('Invitado actualizado correctamente')
+        setSubmitting(false)
         handleCloseDialog()
         loadInvitados()
         // Recargar lotes si el lote cambió
@@ -747,11 +768,13 @@ export function InvitadosPage() {
         }
         // Recargar lotes para actualizar disponibilidad
         loadLotes()
+        setSubmitting(false)
         return
       } else {
         // Verificar que data no sea null
         if (!data) {
           toast.error('Error al crear invitado')
+          setSubmitting(false)
           return
         }
         
@@ -779,6 +802,7 @@ export function InvitadosPage() {
           toast.success('Invitado creado correctamente')
         }
 
+        setSubmitting(false)
         handleCloseDialog()
         // Recargar invitados y obtener la lista actualizada
         const invitadosActualizados = await loadInvitados()
@@ -1495,13 +1519,17 @@ export function InvitadosPage() {
                 type="button"
                 variant="outline"
                 onClick={handleCloseDialog}
-                disabled={uploadingImage}
+                disabled={uploadingImage || submitting}
                 className="flex-1 md:flex-none h-12"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={uploadingImage} className="flex-1 md:flex-none h-12">
-                {uploadingImage ? 'Subiendo...' : selectedInvitado ? 'Guardar' : 'Crear'}
+              <Button type="submit" disabled={uploadingImage || submitting} className="flex-1 md:flex-none h-12">
+                {uploadingImage
+                  ? 'Subiendo...'
+                  : submitting
+                  ? (selectedInvitado ? 'Guardando...' : 'Creando...')
+                  : (selectedInvitado ? 'Guardar' : 'Crear')}
               </Button>
             </div>
           </form>
@@ -1552,9 +1580,16 @@ export function InvitadosPage() {
                     <div className="absolute inset-0 bg-black/60" />
 
                     {/* Contenido */}
-                    <div className="relative flex items-center justify-center gap-2 p-3">
-                      <Calendar className="h-4 w-4 text-white" />
-                      <span className="font-medium text-white">{selectedInvitado.evento.nombre}</span>
+                    <div className="relative flex flex-col items-center justify-center gap-1 p-3">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-white" />
+                        <span className="font-medium text-white">{selectedInvitado.evento.nombre}</span>
+                      </div>
+                      {selectedInvitado.evento.fecha && (
+                        <div className="text-xs text-white/90">
+                          {format(new Date(selectedInvitado.evento.fecha), "EEE. d MMM", { locale: es }).toUpperCase()} - {user?.club.nombre}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
