@@ -1,0 +1,109 @@
+react-dom_client.js?v=ffea9808:20103 Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
+admin:1 <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes">
+DashboardPage.tsx:83 📡 Configurando suscripción realtime para dashboard admin
+DashboardPage.tsx:147 🔌 Desuscribiendo de dashboard-analytics
+DashboardPage.tsx:143 📡 Estado de suscripción dashboard: CLOSED
+DashboardPage.tsx:83 📡 Configurando suscripción realtime para dashboard admin
+DashboardPage.tsx:143 📡 Estado de suscripción dashboard: SUBSCRIBED
+DashboardPage.tsx:147 🔌 Desuscribiendo de dashboard-analytics
+DashboardPage.tsx:143 📡 Estado de suscripción dashboard: CLOSED
+DashboardPage.tsx:83 📡 Configurando suscripción realtime para dashboard admin
+DashboardPage.tsx:143 📡 Estado de suscripción dashboard: SUBSCRIBED
+analytics.service.ts:281 📍 Datos de ubicación recibidos: 514 registros
+analytics.service.ts:282 📍 Datos filtrados por grupo: 514 registros
+analytics.service.ts:283 📍 Agrupando por: localidad
+analytics.service.ts:284 📍 Primeros 5 registros: Array(5)
+analytics.service.ts:296 📍 Ubicaciones únicas encontradas: 9
+analytics.service.ts:297 📍 Mapa de ubicaciones: Array(9)
+analytics.service.ts:305 📍 Datos finales para el gráfico: Array(9)
+analytics.service.ts:105 🔍 getDashboardStats - Filtro grupo: undefined
+analytics.service.ts:106 🔍 Total registros: 1000
+analytics.service.ts:114 🔍 Distribución por grupo de RRPP: Object
+analytics.service.ts:122 🔍 Distribución por grupo de LOTE: Object
+analytics.service.ts:124 🔍 Muestra de datos (primeros 10): Array(10)
+analytics.service.ts:536 🔍 Top RRPPs por invitados: Array(10)
+DashboardPage.tsx:147 🔌 Desuscribiendo de dashboard-analytics
+DashboardPage.tsx:143 📡 Estado de suscripción dashboard: CLOSED
+DashboardPage.tsx:83 📡 Configurando suscripción realtime para dashboard admin
+DashboardPage.tsx:143 📡 Estado de suscripción dashboard: SUBSCRIBED
+analytics.service.ts:105 🔍 getDashboardStats - Filtro grupo: C
+analytics.service.ts:106 🔍 Total registros: 55
+analytics.service.ts:114 🔍 Distribución por grupo de RRPP: Object
+analytics.service.ts:122 🔍 Distribución por grupo de LOTE: Object
+analytics.service.ts:124 🔍 Muestra de datos (primeros 10): Array(10)
+analytics.service.ts:281 📍 Datos de ubicación recibidos: 24 registros
+analytics.service.ts:282 📍 Datos filtrados por grupo: 24 registros
+analytics.service.ts:283 📍 Agrupando por: localidad
+analytics.service.ts:284 📍 Primeros 5 registros: Array(5)
+analytics.service.ts:296 📍 Ubicaciones únicas encontradas: 3
+analytics.service.ts:297 📍 Mapa de ubicaciones: Array(3)
+analytics.service.ts:305 📍 Datos finales para el gráfico: Array(3)
+analytics.service.ts:536 🔍 Top RRPPs por invitados: Array(1)
+DashboardPage.tsx:147 🔌 Desuscribiendo de dashboard-analytics
+DashboardPage.tsx:143 📡 Estado de suscripción dashboard: CLOSED
+DashboardPage.tsx:83 📡 Configurando suscripción realtime para dashboard admin
+DashboardPage.tsx:143 📡 Estado de suscripción dashboard: SUBSCRIBED
+analytics.service.ts:281 📍 Datos de ubicación recibidos: 490 registros
+analytics.service.ts:282 📍 Datos filtrados por grupo: 490 registros
+analytics.service.ts:283 📍 Agrupando por: localidad
+analytics.service.ts:284 📍 Primeros 5 registros: Array(5)
+analytics.service.ts:296 📍 Ubicaciones únicas encontradas: 9
+analytics.service.ts:297 📍 Mapa de ubicaciones: Array(9)
+analytics.service.ts:305 📍 Datos finales para el gráfico: Array(9)
+analytics.service.ts:105 🔍 getDashboardStats - Filtro grupo: A
+analytics.service.ts:106 🔍 Total registros: 1000
+analytics.service.ts:114 🔍 Distribución por grupo de RRPP: Object
+analytics.service.ts:122 🔍 Distribución por grupo de LOTE: Object
+analytics.service.ts:124 🔍 Muestra de datos (primeros 10): Array(10)
+analytics.service.ts:536 🔍 Top RRPPs por invitados: Array(10)
+DashboardPage.tsx:147 🔌 Desuscribiendo de dashboard-analytics
+DashboardPage.tsx:143 📡 Estado de suscripción dashboard: CLOSED
+DashboardPage.tsx:83 📡 Configurando suscripción realtime para dashboard admin
+DashboardPage.tsx:143 📡 Estado de suscripción dashboard: SUBSCRIBED
+analytics.service.ts:281 📍 Datos de ubicación recibidos: 0 registros
+analytics.service.ts:282 📍 Datos filtrados por grupo: 0 registros
+analytics.service.ts:283 📍 Agrupando por: localidad
+analytics.service.ts:284 📍 Primeros 5 registros: Array(0)
+analytics.service.ts:296 📍 Ubicaciones únicas encontradas: 0
+analytics.service.ts:297 📍 Mapa de ubicaciones: Array(0)
+analytics.service.ts:305 📍 Datos finales para el gráfico: Array(0)
+analytics.service.ts:105 🔍 getDashboardStats - Filtro grupo: B
+analytics.service.ts:106 🔍 Total registros: 0
+analytics.service.ts:114 🔍 Distribución por grupo de RRPP: Object
+analytics.service.ts:122 🔍 Distribución por grupo de LOTE: Object
+analytics.service.ts:124 🔍 Muestra de datos (primeros 10): Array(0)
+analytics.service.ts:536 🔍 Top RRPPs por invitados: Array(0)
+DashboardPage.tsx:147 🔌 Desuscribiendo de dashboard-analytics
+DashboardPage.tsx:143 📡 Estado de suscripción dashboard: CLOSED
+DashboardPage.tsx:83 📡 Configurando suscripción realtime para dashboard admin
+DashboardPage.tsx:143 📡 Estado de suscripción dashboard: SUBSCRIBED
+analytics.service.ts:281 📍 Datos de ubicación recibidos: 0 registros
+analytics.service.ts:282 📍 Datos filtrados por grupo: 0 registros
+analytics.service.ts:283 📍 Agrupando por: localidad
+analytics.service.ts:284 📍 Primeros 5 registros: Array(0)
+analytics.service.ts:296 📍 Ubicaciones únicas encontradas: 0
+analytics.service.ts:297 📍 Mapa de ubicaciones: Array(0)
+analytics.service.ts:305 📍 Datos finales para el gráfico: Array(0)
+analytics.service.ts:105 🔍 getDashboardStats - Filtro grupo: D
+analytics.service.ts:106 🔍 Total registros: 0
+analytics.service.ts:114 🔍 Distribución por grupo de RRPP: Object
+analytics.service.ts:122 🔍 Distribución por grupo de LOTE: Object
+analytics.service.ts:124 🔍 Muestra de datos (primeros 10): Array(0)
+analytics.service.ts:536 🔍 Top RRPPs por invitados: Array(0)
+DashboardPage.tsx:147 🔌 Desuscribiendo de dashboard-analytics
+DashboardPage.tsx:143 📡 Estado de suscripción dashboard: CLOSED
+DashboardPage.tsx:83 📡 Configurando suscripción realtime para dashboard admin
+DashboardPage.tsx:143 📡 Estado de suscripción dashboard: SUBSCRIBED
+analytics.service.ts:105 🔍 getDashboardStats - Filtro grupo: undefined
+analytics.service.ts:106 🔍 Total registros: 1000
+analytics.service.ts:114 🔍 Distribución por grupo de RRPP: Object
+analytics.service.ts:122 🔍 Distribución por grupo de LOTE: Object
+analytics.service.ts:124 🔍 Muestra de datos (primeros 10): Array(10)
+analytics.service.ts:281 📍 Datos de ubicación recibidos: 514 registros
+analytics.service.ts:282 📍 Datos filtrados por grupo: 514 registros
+analytics.service.ts:283 📍 Agrupando por: localidad
+analytics.service.ts:284 📍 Primeros 5 registros: Array(5)
+analytics.service.ts:296 📍 Ubicaciones únicas encontradas: 9
+analytics.service.ts:297 📍 Mapa de ubicaciones: Array(9)
+analytics.service.ts:305 📍 Datos finales para el gráfico: Array(9)
+analytics.service.ts:536 🔍 Top RRPPs por invitados: Array(10)
