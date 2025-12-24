@@ -519,6 +519,13 @@ export function InvitadosPage() {
       return
     }
 
+    // Validar ubicación (departamento y localidad obligatorios)
+    if (!formData.departamento || !formData.localidad) {
+      toast.error('Debe seleccionar departamento y localidad')
+      setSubmitting(false)
+      return
+    }
+
     // Validar que se haya seleccionado un lote (obligatorio)
     if (!formData.uuid_lote) {
       toast.error('Debe seleccionar un lote')

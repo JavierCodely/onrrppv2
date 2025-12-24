@@ -3,6 +3,7 @@ import { RRPPLayout } from '@/components/organisms/RRPPLayout'
 import { EventosRRPPPage } from '@/components/pages/rrpp/EventosRRPPPage'
 import { InvitadosPage } from '@/components/pages/rrpp/InvitadosPage'
 import { VentasPage } from '@/components/pages/rrpp/VentasPage'
+import { PerfilPage } from '@/components/pages/rrpp/PerfilPage'
 import { ConfiguracionPage } from '@/components/pages/ConfiguracionPage'
 
 export function RRPPDashboard() {
@@ -12,6 +13,7 @@ export function RRPPDashboard() {
         <Route index element={<EventosRRPPPage />} />
         <Route path="invitados" element={<InvitadosPage />} />
         <Route path="ventas" element={<VentasPage />} />
+        <Route path="perfil" element={<PerfilPage />} />
         <Route path="tema" element={<ConfiguracionPage />} />
         <Route path="*" element={<Navigate to="/dashboard/rrpp" replace />} />
       </Routes>
