@@ -1644,7 +1644,7 @@ export function InvitadosPage() {
                     <QRCodeSVG
                       id={`qr-${selectedInvitado.id}`}
                       value={selectedInvitado.qr_code}
-                      size={340}
+                      size={240}
                       level="H"
                       includeMargin={true}
                     />
