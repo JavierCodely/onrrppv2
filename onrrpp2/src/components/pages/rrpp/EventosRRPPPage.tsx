@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth.store'
 import { eventosService, type EventoRRPPStats } from '@/services/eventos.service'
@@ -28,6 +28,8 @@ import {
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
+const GREETING_EMOJIS = ['👋', '🎉', '🔥', '✨', '🚀', '💪', '⚡', '🌟', '😎', '🙌', '💥', '🎊']
+
 export function EventosRRPPPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
@@ -37,6 +39,10 @@ export function EventosRRPPPage() {
   const [selectedEvento, setSelectedEvento] = useState<EventoRRPPStats | null>(null)
   const [lotes, setLotes] = useState<Lote[]>([])
   const [loadingLotes, setLoadingLotes] = useState(false)
+
+  const randomEmoji = useMemo(() => {
+    return GREETING_EMOJIS[Math.floor(Math.random() * GREETING_EMOJIS.length)]
+  }, [])
 
   useEffect(() => {
     if (!user) return
@@ -148,7 +154,7 @@ export function EventosRRPPPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Hola! {user?.personal.nombre} 👋</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Hola! {user?.personal.nombre} {randomEmoji}</h1>
         <p className="text-muted-foreground">
           Selecciona un evento para crear invitados
         </p>

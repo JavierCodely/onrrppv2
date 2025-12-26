@@ -59,6 +59,7 @@ import {
 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { format } from 'date-fns'
+import applicationLogo from '/sponsor/onevents.webp' 
 import { es } from 'date-fns/locale'
 
 export function InvitadosPage() {
@@ -1639,13 +1640,23 @@ export function InvitadosPage() {
 
                 {/* QR Code */}
                 <div className="flex justify-center p-4 bg-white rounded-lg">
-                  <QRCodeSVG
-                    id={`qr-${selectedInvitado.id}`}
-                    value={selectedInvitado.qr_code}
-                    size={240}
-                    level="H"
-                    includeMargin={true}
-                  />
+                  <div className="relative">
+                    <QRCodeSVG
+                      id={`qr-${selectedInvitado.id}`}
+                      value={selectedInvitado.qr_code}
+                      size={340}
+                      level="H"
+                      includeMargin={true}
+                    />
+                    {/* Logo application en el centro */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <img 
+                        src={applicationLogo} 
+                        alt="Application" 
+                        className="w-16 h-16 object-contain"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="text-center text-xs text-muted-foreground font-mono">
@@ -1662,8 +1673,8 @@ export function InvitadosPage() {
                 {/* Botón cerrar con logos */}
                 <div className="flex items-center justify-between gap-2">
                   <img
-                    src="/sponsor/heineken.webp"
-                    alt="Heineken"
+                    src="/sponsor/speed.webp"
+                    alt="Speed"
                     className="h-28 w-auto object-contain"
                   />
                   <Button
